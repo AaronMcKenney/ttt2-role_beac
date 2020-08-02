@@ -5,7 +5,7 @@ CreateConVar("ttt2_beacon_buff_on_all_searches", "0", {FCVAR_ARCHIVE, FCVAR_NOTF
 CreateConVar("ttt2_beacon_judgement", "20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_speed_boost", "0.20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_jump_boost", "0.20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
-CreateConVar("ttt2_beacon_armor_boost", "10", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
+CreateConVar("ttt2_beacon_armor_boost", "20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_damage_boost", "0.15", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 
 hook.Add("TTTUlxDynamicRCVars", "ttt2_ulx_dynamic_beacon_convars", function(tbl)
@@ -23,8 +23,8 @@ hook.Add("TTTUlxDynamicRCVars", "ttt2_ulx_dynamic_beacon_convars", function(tbl)
 	table.insert(tbl[ROLE_BEACON], {cvar = "ttt2_beacon_speed_boost", slider = true, min = 0.0, max = 3.5, decimal = 2, desc = "ttt2_beacon_speed_boost (Def: 0.20)"})
 	--"The jump height boost the beacon gets per buff (Def: 0.20)"
 	table.insert(tbl[ROLE_BEACON], {cvar = "ttt2_beacon_jump_boost", slider = true, min = 0.0, max = 3.5, decimal = 2, desc = "ttt2_beacon_jump_boost (Def: 0.20)"})
-	--"The armor boost the beacon gets per buff (Def: 10)"
-	table.insert(tbl[ROLE_BEACON], {cvar = "ttt2_beacon_armor_boost", slider = true, min = 0, max = 100, decimal = 0, desc = "ttt2_beacon_armor_boost (Def: 10)"})
+	--"The armor boost the beacon gets per buff (Def: 20)"
+	table.insert(tbl[ROLE_BEACON], {cvar = "ttt2_beacon_armor_boost", slider = true, min = 0, max = 100, decimal = 0, desc = "ttt2_beacon_armor_boost (Def: 20)"})
 	--"The damage boost the beacon gets per buff (Def: 0.15)"
 	table.insert(tbl[ROLE_BEACON], {cvar = "ttt2_beacon_damage_boost", slider = true, min = 0.0, max = 3.5, decimal = 2, desc = "ttt2_beacon_damage_boost (Def: 0.15)"})
 end)
