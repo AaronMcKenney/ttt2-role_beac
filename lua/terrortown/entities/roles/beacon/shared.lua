@@ -40,6 +40,7 @@ if SERVER then
 	
 	local function ResetBeacon()
 		for i, ply_i in ipairs(player.GetAll()) do
+			ply_i:SetNWBool("IsDetectiveBeacon", false)
 			ply_i:SetNWBool("HadBeaconBuffsRemoved", false)
 			ply_i:SetNWBool("HasKilledAnInnocent", false)
 			for j, ply_j in ipairs(player.GetAll()) do
@@ -73,6 +74,12 @@ if SERVER then
 		if ply:GetJumpPower() > default_jump_power and not ply:HasEquipmentItem("item_ttt_nofalldmg") then
 			ply:GiveEquipmentItem("item_ttt_nofalldmg")
 		end
+		
+		if ply:GetNWInt("NumBeaconBuffs") >= GetConVar("ttt2_beacon_deputize_num_buffs"):GetInt() then
+			--Make the beacon known to everyone in game (similar to detective).
+			ply:SetNWBool("IsDetectiveBeacon", true)
+			SendPlayerToEveryone(ply)
+		end
 	end
 	
 	local function BuffABeacon(ply, provider_id)
@@ -95,12 +102,12 @@ if SERVER then
 			--UNCOMMENT FOR DEBUGGING
 			--PrintBeaconStats("BEAC_DEBUG UpdateBeaconStats Before: ", ply)
 			
+			--Increment even if the player isn't a beacon, in case they become one (ex. amnesiac).
+			ply:SetNWInt("NumBeaconBuffs", ply:GetNWInt("NumBeaconBuffs") + 1)
+			
 			if ply:GetSubRole() == ROLE_BEACON then
 				UpdateBeaconStats(ply, 1)
 			end
-			
-			--Increment even if the player isn't a beacon, in case they become one (ex. amnesiac).
-			ply:SetNWInt("NumBeaconBuffs", ply:GetNWInt("NumBeaconBuffs") + 1)
 			
 			--Ensure that duplicate buffs aren't given.
 			ply:SetNWBool("HasProvidedBeaconBuff_" .. provider_id, true)
@@ -134,6 +141,8 @@ if SERVER then
 		end
 		
 		--Do not alter NumBeaconBuffs here, in case they become a beacon later on (ex. admin ulx)
+		
+		ply:SetNWBool("IsDetectiveBeacon", false)
 		
 		ply:SetNWBool("HadBeaconBuffsRemoved", true)
 		
@@ -263,6 +272,15 @@ if SERVER then
 		end
 	end)
 	
+	hook.Add("TTT2SpecialRoleSyncing", "BeaconRoleSync", function(ply, tbl)
+		--This hook is needed to maintain a beacon's "glow" if they respawn or briefly change roles.
+		for ply_i in pairs(tbl) do
+			if ply_i:IsTerror() and ply_i:Alive() and ply_i:GetSubRole() == ROLE_BEACON and ply:GetNWBool("IsDetectiveBeacon") then
+				tbl[ply_i] = {ROLE_BEACON, TEAM_INNOCENT}
+			end
+		end
+	end)
+	
 	--TESTS:
 	--beacon is buffed if they search a dead inno publicly.
 	--beacon is buffed if someone else searches a dead inno publicly.
@@ -291,4 +309,43 @@ if SERVER then
 	--beacon cannot receive more than max_buffs if they search more than max_buffs dead innos bodies
 	--If all_searches is disabled, then beacon does not receive buffs on searching traitor/3rd party roles.
 	--If all_searches is enabled, then beacon receives buffs on searching traitor/3rd party roles
+	--
+	--beacon with at least one buff is killed and then quickly revived. They retain their one buff on revival.
+	--?beacon with no buffs is killed, and then a different inno role is confirmed dead, and then the beacon is revived. This beacon will respawn with one buff.
+	--
+	--beacon gains a "glow" when a certain number of dead innos are confirmed.
+	--beacon's "glow" is removed if they die.
+	--beacon's "glow" is removed if they change roles.
+	--beacon's "glow" is returned if they respawn
+	--becaon's "glow" is returned if they change to a non-beacon role and back into a beacon.
+end
+
+if CLIENT then
+	--Modified from Pharoah's Ankh.
+	function BeaconDynamicLight(ply, color, brightness)
+		-- make sure initial values are set
+		if not ply.beac_light_next_state then
+			ply.beac_light_next_state = CurTime()
+		end
+
+		--Create dynamic light
+		local dlight = DynamicLight(ply:EntIndex())
+		dlight.r = color.r
+		dlight.g = color.g
+		dlight.b = color.b
+		dlight.brightness = brightness
+		dlight.Decay = 1000
+		dlight.Size = 200
+		dlight.DieTime = CurTime() + 0.1
+		dlight.Pos = ply:GetPos() + Vector(0, 0, 35)
+	end
+	
+	hook.Add("Think", "BeaconLightUp", function()
+		for _,ply in pairs(player.GetAll()) do
+			if IsValid(ply) and ply:IsPlayer() and ply:GetNWBool("IsDetectiveBeacon") then
+				BeaconDynamicLight(ply, BEACON.color, 1)
+				outline.Add({ply}, BEACON.color, OUTLINE_MODE_VISIBLE)
+			end
+		end
+	end)
 end
