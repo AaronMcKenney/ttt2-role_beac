@@ -344,6 +344,13 @@ if CLIENT then
 		for _,ply in pairs(player.GetAll()) do
 			if IsValid(ply) and ply:IsPlayer() and ply:GetNWBool("IsDetectiveBeacon") then
 				BeaconDynamicLight(ply, BEACON.color, 1)
+			end
+		end
+	end)
+	
+	hook.Add("PreDrawOutlines", "OutlineBeacon", function()
+		for _,ply in pairs(player.GetAll()) do
+			if IsValid(ply) and ply:IsPlayer() and ply:GetNWBool("IsDetectiveBeacon") then
 				outline.Add({ply}, BEACON.color, OUTLINE_MODE_VISIBLE)
 			end
 		end
