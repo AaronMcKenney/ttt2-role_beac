@@ -65,17 +65,11 @@ if CLIENT then
 		return HUDEditor.IsEditing or (client:Alive() and client:GetSubRole() == ROLE_BEACON)
 	end
 
-	function HUDELEMENT:DrawComponent(text, is_detective_beacon)
+	function HUDELEMENT:DrawComponent(text, color)
 		local pos = self:GetPos()
 		local size = self:GetSize()
 		local x, y = pos.x, pos.y
 		local w, h = size.w, size.h
-		local color = self.basecolor
-		
-		if is_detective_beacon then
-			--Light up the HUD itself if the beacon becomes detective-like.
-			color = BEACON.color
-		end
 		
 		self:DrawBg(x, y, w, h, color)
 		draw.AdvancedText(text, "PureSkinBar", x + self.iconSize + self.pad, y + h * 0.5, util.GetDefaultColor(color), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, true, self.scale)
@@ -88,10 +82,14 @@ if CLIENT then
 	
 	function HUDELEMENT:Draw()
 		local client = LocalPlayer()
-
-		local color = BEACON.color
+		local color = self.basecolor
+		
+		if client:GetNWBool("IsDetectiveBeacon") then
+			--Light up the HUD itself if the beacon becomes detective-like.
+			color = BEACON.color
+		end
 		if not color then return end
-
-		self:DrawComponent("Buffs Received: " .. client:GetNWInt("NumBeaconBuffs"), client:GetNWBool("IsDetectiveBeacon"))
+		
+		self:DrawComponent("Buffs Received: " .. client:GetNWInt("NumBeaconBuffs"), color)
 	end
 end
