@@ -278,7 +278,7 @@ if SERVER then
 			if ply_i:IsTerror() and ply_i:Alive() and ply_i:GetSubRole() == ROLE_BEACON and ply:GetNWBool("IsDetectiveBeacon") then
 				tbl[ply_i] = {ROLE_BEACON, TEAM_INNOCENT}
 				
-				--Resend this player's role info to everyone, as it is resets when a role change occurs.
+				--Resend this player's role info to everyone, as the info is lost when a role change occurs.
 				SendPlayerToEveryone(ply)
 			end
 		end
@@ -290,6 +290,7 @@ if SERVER then
 	--beacon is buffed if they search a dead inno covertly.
 	--beacon is not buffed if someone else searches a dead inno covertly.
 	--beacon is buffed if they search a wrath before the wrath revives as a traitor.
+	--beacon is buffed if they search a bodyguard who was guarding an inno.
 	--beacon does not receive multiple buffs if they search a dead inno multiple times.
 	--beacon does not receive multiple buffs from an inno who is revived/respawned multiple times.
 	--
@@ -314,7 +315,7 @@ if SERVER then
 	--If all_searches is enabled, then beacon receives buffs on searching traitor/3rd party roles
 	--
 	--beacon with at least one buff is killed and then quickly revived. They retain their one buff on revival.
-	--?beacon with no buffs is killed, and then a different inno role is confirmed dead, and then the beacon is revived. This beacon will respawn with one buff.
+	--beacon with no buffs is killed, and then a different inno role is confirmed dead, and then the beacon is revived. This beacon will respawn with one buff.
 	--
 	--beacon gains a "glow" when a certain number of dead innos are confirmed.
 	--beacon's "glow" is removed if they die.
