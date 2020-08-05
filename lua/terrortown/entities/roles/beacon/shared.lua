@@ -283,45 +283,6 @@ if SERVER then
 			end
 		end
 	end)
-	
-	--TESTS:
-	--beacon is buffed if they search a dead inno publicly.
-	--beacon is buffed if someone else searches a dead inno publicly.
-	--beacon is buffed if they search a dead inno covertly.
-	--beacon is not buffed if someone else searches a dead inno covertly.
-	--beacon is buffed if they search a wrath before the wrath revives as a traitor.
-	--beacon is buffed if they search a bodyguard who was guarding an inno.
-	--beacon does not receive multiple buffs if they search a dead inno multiple times.
-	--beacon does not receive multiple buffs from an inno who is revived/respawned multiple times.
-	--
-	--beacon only receives no fall damage item when their jump power > default jump power.
-	--
-	--multiple beacons in play benefit from public searches of innos.
-	--amnesiac who becomes a beacon in the middle of the round receives public beacon buffs.
-	--unknown who becomes a beacon in the middle of the round receives public beacon buffs.
-	--switching the beacon's role via admin between a different role and beacon maintains the correct buffs (beacon should have same buffs, non-beacon should have no buffs).
-	--
-	--beacon becomes an inno and loses 20HP if they kill an inno.
-	--former beacon is reset at the start of the next round.
-	--beacon who commits suicide remains a beacon.
-	--beacon who kills themselves via judgement appears as an innocent when searched.
-	--amnesiac who kills the beacon and investigates them becomes an innocent.
-	--unknown who kills an innocent and then is killed by a beacon becomes an innocent instead.
-	--beacon who becomes sidekick via jackal's sidekick deagle loses all of their buffs.
-	--
-	--beacon receives min_buffs at round start if min_buffs > 0
-	--beacon cannot receive more than max_buffs if they search more than max_buffs dead innos bodies
-	--If all_searches is disabled, then beacon does not receive buffs on searching traitor/3rd party roles.
-	--If all_searches is enabled, then beacon receives buffs on searching traitor/3rd party roles
-	--
-	--beacon with at least one buff is killed and then quickly revived. They retain their one buff on revival.
-	--beacon with no buffs is killed, and then a different inno role is confirmed dead, and then the beacon is revived. This beacon will respawn with one buff.
-	--
-	--beacon gains a "glow" when a certain number of dead innos are confirmed.
-	--beacon's "glow" is removed if they die.
-	--beacon's "glow" is removed if they change roles.
-	--beacon's "glow" is returned if they respawn
-	--becaon's "glow" is returned if they change to a non-beacon role and back into a beacon.
 end
 
 if CLIENT then
