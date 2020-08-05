@@ -35,8 +35,11 @@ function ROLE:Initialize()
 end
 
 if SERVER then
-	--Constants
-	local default_jump_power = 160 --Hardcoded default that everyone uses.
+	--CONSTANTS
+	--Hardcoded default that everyone uses.
+	local DEFAULT_JUMP_POWER = 160
+	--ttt2_beacon_search_mode enum
+	local SEARCH_MODE = {MATES = 0, OTHER = 1, ANY = 2}
 	
 	local function ResetBeacon()
 		for i, ply_i in ipairs(player.GetAll()) do
@@ -67,11 +70,11 @@ if SERVER then
 	local function UpdateBeaconStats(ply, n)
 		--Speed is handled in TTTPlayerSpeedModifier handle.
 		--Damage is handled in EntityTakeDamage handle.
-		ply:SetJumpPower(ply:GetJumpPower() + n * (default_jump_power * GetConVar("ttt2_beacon_jump_boost"):GetFloat()))
+		ply:SetJumpPower(ply:GetJumpPower() + n * (DEFAULT_JUMP_POWER * GetConVar("ttt2_beacon_jump_boost"):GetFloat()))
 		ply:GiveArmor(n * GetConVar("ttt2_beacon_armor_boost"):GetInt())
 		
 		--Only give no fall damage if beacon runs risk of hurting themselves merely from jumping
-		if ply:GetJumpPower() > default_jump_power and not ply:HasEquipmentItem("item_ttt_nofalldmg") then
+		if ply:GetJumpPower() > DEFAULT_JUMP_POWER and not ply:HasEquipmentItem("item_ttt_nofalldmg") then
 			ply:GiveEquipmentItem("item_ttt_nofalldmg")
 		end
 		
@@ -133,7 +136,7 @@ if SERVER then
 		
 		--Speed is handled in TTTPlayerSpeedModifier handle.
 		--Damage is handled in EntityTakeDamage handle.
-		ply:SetJumpPower(ply:GetJumpPower() - n * (default_jump_power * GetConVar("ttt2_beacon_jump_boost"):GetFloat()))
+		ply:SetJumpPower(ply:GetJumpPower() - n * (DEFAULT_JUMP_POWER * GetConVar("ttt2_beacon_jump_boost"):GetFloat()))
 		ply:RemoveArmor(n * GetConVar("ttt2_beacon_armor_boost"):GetInt())
 		
 		if ply:HasEquipmentItem("item_ttt_nofalldmg") then
@@ -243,8 +246,16 @@ if SERVER then
 			return
 		end
 		
-		--Buff all beacons the first time that an innocent player's corpse is searched.
-		if dead_ply:GetTeam() == TEAM_INNOCENT or GetConVar("ttt2_beacon_buff_on_all_searches"):GetBool() then
+		local do_buff = false
+		if GetConVar("ttt2_beacon_search_mode"):GetInt() == SEARCH_MODE.MATES then
+			do_buff = (dead_ply:GetTeam() == TEAM_INNOCENT)
+		elseif GetConVar("ttt2_beacon_search_mode"):GetInt() == SEARCH_MODE.OTHER then
+			do_buff = (dead_ply:GetTeam() ~= TEAM_INNOCENT)
+		else --SEARCH_MODE.ANY
+			do_buff = true
+		end
+		
+		if do_buff then
 			--UNCOMMENT FOR DEBUGGING
 			--print("BEAC_DEBUG BeaconUpdateOnCorpseSearch: isCovert=", isCovert, ", ID=", dead_ply:SteamID64())
 			
