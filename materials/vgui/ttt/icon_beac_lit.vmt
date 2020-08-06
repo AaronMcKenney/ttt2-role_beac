@@ -1,6 +1,6 @@
 "UnlitGeneric"
 {
-	"$basetexture" "vgui/ttt/icon_bodyguard_guarding"
+	"$basetexture" "vgui/ttt/icon_beac_lit"
 	"$nocull" 1
 	"$nodecal" 1
 	"$nolod" 1

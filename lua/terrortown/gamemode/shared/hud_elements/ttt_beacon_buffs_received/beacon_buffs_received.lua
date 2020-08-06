@@ -8,8 +8,10 @@ HUDELEMENT.Base = base
 if CLIENT then
 	local pad = 7
 	local iconSize = 64
+	local icon_beac_unlit = Material("vgui/ttt/dynamic/roles/icon_beac")
+	local icon_beac_lit = Material("vgui/ttt/icon_beac_lit")
 	
-	HUDELEMENT.icon = Material("vgui/ttt/icon_beac")
+	HUDELEMENT.icon = Material("vgui/ttt/icon_beac_unlit")
 	
 	local const_defaults = {
 		basepos = {x = 0, y = 0},
@@ -64,32 +66,40 @@ if CLIENT then
 
 		return HUDEditor.IsEditing or (client:Alive() and client:GetSubRole() == ROLE_BEACON)
 	end
+	
+	function HUDELEMENT:SetIcon(new_icon)
+		self.icon = new_icon
+	end
 
-	function HUDELEMENT:DrawComponent(text, color)
+	function HUDELEMENT:DrawComponent(text, bg_color, icon_color)
 		local pos = self:GetPos()
 		local size = self:GetSize()
 		local x, y = pos.x, pos.y
 		local w, h = size.w, size.h
 		
-		self:DrawBg(x, y, w, h, color)
-		draw.AdvancedText(text, "PureSkinBar", x + self.iconSize + self.pad, y + h * 0.5, util.GetDefaultColor(color), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, true, self.scale)
+		self:DrawBg(x, y, w, h, bg_color)
+		draw.AdvancedText(text, "PureSkinBar", x + self.iconSize + self.pad, y + h * 0.5, util.GetDefaultColor(bg_color), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, true, self.scale)
 		self:DrawLines(x, y, w, h, self.basecolor.a)
 		
 		local nSize = self.iconSize - 16
 		
-		draw.FilteredShadowedTexture(x, y - 2 - (nSize - h), nSize, nSize, self.icon, 255, util.GetDefaultColor(color), self.scale)
+		draw.FilteredShadowedTexture(x, y - 2 - (nSize - h), nSize, nSize, self.icon, 255, icon_color, self.scale)
 	end
 	
 	function HUDELEMENT:Draw()
 		local client = LocalPlayer()
-		local color = self.basecolor
+		local bg_color = self.basecolor
+		local icon_color = COLOR_BLACK
+		self:SetIcon(icon_beac_unlit)
 		
 		if client:GetNWBool("IsDetectiveBeacon") then
 			--Light up the HUD itself if the beacon becomes detective-like.
-			color = BEACON.color
+			bg_color = BEACON.color
+			icon_color = COLOR_WHITE
+			self:SetIcon(icon_beac_lit)
 		end
-		if not color then return end
+		if not bg_color then return end
 		
-		self:DrawComponent("Buffs Received: " .. client:GetNWInt("NumBeaconBuffs"), color)
+		self:DrawComponent("Buffs Received: " .. client:GetNWInt("NumBeaconBuffs"), bg_color, icon_color)
 	end
 end
