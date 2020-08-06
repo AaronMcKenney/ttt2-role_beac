@@ -7,6 +7,7 @@ Buff Tests:
 --beacon is buffed if they search a bodyguard who was guarding an inno.
 --beacon does not receive multiple buffs if they search a dead inno multiple times.
 --unknown who becomes a beacon in the middle of the round receives public beacon buffs.
+--beacon is buffed if they search a spy.
 
 --Death and Role Switch Tests:
 --beacon does not receive multiple buffs from an inno who is revived/respawned multiple times.
