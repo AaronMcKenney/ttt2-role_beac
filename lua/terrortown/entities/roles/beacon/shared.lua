@@ -2,6 +2,7 @@ AddCSLuaFile()
 
 if SERVER then
 	resource.AddFile("materials/vgui/ttt/dynamic/roles/icon_beac.vmt")
+	util.AddNetworkString("TTT2UpdateNumBeaconBuffs")
 end
 
 function ROLE:PreInitialize()
@@ -43,25 +44,25 @@ if SERVER then
 	
 	local function ResetBeacon()
 		for i, ply_i in ipairs(player.GetAll()) do
+			--Initialize player data that only the server must know about
+			ply_i.beac_sv_data = {}
+			ply_i.beac_sv_data.had_buffs_removed = false
+			ply_i.beac_sv_data.has_killed_inno = false
+			ply_i.beac_sv_data.buff_providers = {}
+			ply_i.beac_sv_data.num_buffs = 0
+			
+			--Initialize player data that anyone can pick up from the server at any time.
 			ply_i:SetNWBool("IsDetectiveBeacon", false)
-			ply_i:SetNWBool("HadBeaconBuffsRemoved", false)
-			ply_i:SetNWBool("HasKilledAnInnocent", false)
-			for j, ply_j in ipairs(player.GetAll()) do
-				if ply_i:SteamID64() ~= ply_j:SteamID64() then
-					ply_i:SetNWBool("HasProvidedBeaconBuff_" .. ply_j:SteamID64(), false)
-				end
-			end
-			ply_i:SetNWInt("NumBeaconBuffs", GetConVar("ttt2_beacon_min_buffs"):GetInt())
 		end
 	end
 	
-	--Do not reset beacon on TTTEndRound, because that will set NumBeaconBuffs to 0 before RemoveRoleLoadout() is called.
+	--Do not reset beacon on TTTEndRound, because that will set num_buffs to 0 before RemoveRoleLoadout() is called.
 	hook.Add("TTTPrepareRound", "ResetBeacon", ResetBeacon)
 	hook.Add("TTTBeginRound", "ResetBeacon", ResetBeacon)
 	
 	--UNCOMMENT FOR DEBUGGING
 	--local function PrintBeaconStats(prefix_str, ply)
-	--	local n = ply:GetNWInt("NumBeaconBuffs")
+	--	local n = ply.beac_sv_data.num_buffs
 	--	local speed = 1 + n * GetConVar("ttt2_beacon_speed_boost"):GetFloat()
 	--	local dmg = 1 + n * GetConVar("ttt2_beacon_damage_boost"):GetFloat()
 	--	print(prefix_str, "name=", ply:GetName(), ", num_buffs=", n, ", speed=", speed, ", jump=", ply:GetJumpPower(), ", armor=", ply:GetArmor(), ", dmg=", dmg)
@@ -78,7 +79,7 @@ if SERVER then
 			ply:GiveEquipmentItem("item_ttt_nofalldmg")
 		end
 		
-		if ply:GetNWInt("NumBeaconBuffs") >= GetConVar("ttt2_beacon_deputize_num_buffs"):GetInt() then
+		if ply.beac_sv_data.num_buffs >= GetConVar("ttt2_beacon_deputize_num_buffs"):GetInt() then
 			--Make the beacon known to everyone in game (similar to detective).
 			ply:SetNWBool("IsDetectiveBeacon", true)
 			SendPlayerToEveryone(ply)
@@ -91,7 +92,7 @@ if SERVER then
 		end
 		
 		--Beacon can only have so many buffs
-		if ply:GetNWInt("NumBeaconBuffs") >= GetConVar("ttt2_beacon_max_buffs"):GetInt() then
+		if ply.beac_sv_data.num_buffs >= GetConVar("ttt2_beacon_max_buffs"):GetInt() then
 			return
 		end
 		
@@ -101,19 +102,25 @@ if SERVER then
 		end
 		
 		--Only buff the given beacon if they have not already been buffed by the provider.
-		if not ply:GetNWBool("HasProvidedBeaconBuff_" .. provider_id) then
+		if ply.beac_sv_data.buff_providers[provider_id] == nil then
 			--UNCOMMENT FOR DEBUGGING
 			--PrintBeaconStats("BEAC_DEBUG UpdateBeaconStats Before: ", ply)
 			
 			--Increment even if the player isn't a beacon, in case they become one (ex. amnesiac).
-			ply:SetNWInt("NumBeaconBuffs", ply:GetNWInt("NumBeaconBuffs") + 1)
+			ply.beac_sv_data.num_buffs = ply.beac_sv_data.num_buffs + 1
 			
-			if ply:GetSubRole() == ROLE_BEACON then
+			--Send the updated number of buffs to the client
+			net.Start("TTT2UpdateNumBeaconBuffs")
+			net.WriteInt(ply.beac_sv_data.num_buffs, 16)
+			net.Send(ply)
+			
+			--Don't directly modify the stats of dead beacons or non-beacons.
+			if ply:Alive() and ply:GetSubRole() == ROLE_BEACON then
 				UpdateBeaconStats(ply, 1)
 			end
 			
 			--Ensure that duplicate buffs aren't given.
-			ply:SetNWBool("HasProvidedBeaconBuff_" .. provider_id, true)
+			ply.beac_sv_data.buff_providers[provider_id] = true
 			
 			--UNCOMMENT FOR DEBUGGING
 			--PrintBeaconStats("BEAC_DEBUG UpdateBeaconStats After: ", ply)
@@ -132,7 +139,7 @@ if SERVER then
 		--UNCOMMENT FOR DEBUGGING
 		--PrintBeaconStats("BEAC_DEBUG DebuffABeacon Before: ", ply)
 		
-		local n = ply:GetNWInt("NumBeaconBuffs")
+		local n = ply.beac_sv_data.num_buffs
 		
 		--Speed is handled in TTTPlayerSpeedModifier handle.
 		--Damage is handled in EntityTakeDamage handle.
@@ -143,11 +150,11 @@ if SERVER then
 			ply:RemoveEquipmentItem("item_ttt_nofalldmg")
 		end
 		
-		--Do not alter NumBeaconBuffs here, in case they become a beacon later on (ex. admin ulx)
+		--Do not alter num_buffs here, in case they become a beacon later on (ex. admin ulx)
 		
 		ply:SetNWBool("IsDetectiveBeacon", false)
 		
-		ply:SetNWBool("HadBeaconBuffsRemoved", true)
+		ply.beac_sv_data.had_buffs_removed = true
 		
 		--UNCOMMENT FOR DEBUGGING
 		--PrintBeaconStats("BEAC_DEBUG DebuffABeacon After: ", ply)
@@ -155,20 +162,20 @@ if SERVER then
 	
 	function ROLE:GiveRoleLoadout(ply, isRoleChange)
 		--Prevents edge case where murderous amnesiac is quickly given beacon buffs before becoming innocent
-		if not ply:GetNWBool("HasKilledAnInnocent") then
+		if not ply.beac_sv_data.has_killed_inno then
 			--UNCOMMENT FOR DEBUGGING
 			--print("BEAC_DEBUG GiveRoleLoadout")
 			
-			UpdateBeaconStats(ply, ply:GetNWInt("NumBeaconBuffs"))
+			UpdateBeaconStats(ply, ply.beac_sv_data.num_buffs)
 			
 			--Allow for the beacon to lose their stats again.
-			ply:SetNWBool("HadBeaconBuffsRemoved", false)
+			ply.beac_sv_data.had_buffs_removed = false
 		end
 	end
 
 	function ROLE:RemoveRoleLoadout(ply, isRoleChange)
 		--Sometimes RemoveRoleLoadout is called multiple times in a row, so here's a workaround.
-		if not ply:GetNWBool("HadBeaconBuffsRemoved") then
+		if not ply.beac_sv_data.had_buffs_removed then
 			--UNCOMMENT FOR DEBUGGING
 			--print("BEAC_DEBUG RemoveRoleLoadout")
 			
@@ -178,7 +185,7 @@ if SERVER then
 	
 	hook.Add("TTTPlayerSpeedModifier", "BeaconModifySpeed", function(ply, _, _, no_lag)
 		if IsValid(ply) and ply:IsPlayer() and ply:GetSubRole() == ROLE_BEACON then
-			no_lag[1] = no_lag[1] * (1 + ply:GetNWInt("NumBeaconBuffs") * GetConVar("ttt2_beacon_speed_boost"):GetFloat())
+			no_lag[1] = no_lag[1] * (1 + ply.beac_sv_data.num_buffs * GetConVar("ttt2_beacon_speed_boost"):GetFloat())
 		end
 	end)
 	
@@ -190,7 +197,7 @@ if SERVER then
 		end
 		
 		if attacker:GetSubRole() == ROLE_BEACON then
-			dmg_info:SetDamage(dmg_info:GetDamage() * (1 + attacker:GetNWInt("NumBeaconBuffs") * GetConVar("ttt2_beacon_damage_boost"):GetFloat()))
+			dmg_info:SetDamage(dmg_info:GetDamage() * (1 + attacker.beac_sv_data.num_buffs * GetConVar("ttt2_beacon_damage_boost"):GetFloat()))
 		end
 	end)
 	
@@ -213,7 +220,7 @@ if SERVER then
 		--print("BEAC_DEBUG BeaconUpdateOnDeath: Preventing inno-killer from being beacon.")
 		
 		--Prevent any role (ex. amnesiac) from becoming a beacon if they kill an innocent.
-		attacker:SetNWBool("HasKilledAnInnocent", true)
+		attacker.beac_sv_data.has_killed_inno = true
 		
 		if attacker:GetSubRole() == ROLE_BEACON then
 			--Demote the guilty one.
@@ -225,7 +232,7 @@ if SERVER then
 		else
 			--A non-beacon who kills an inno may not receive nor lose beacon buffs.
 			--In a sense, their privilege of obtaining beacon buffs is now removed.
-			attacker:SetNWBool("HadBeaconBuffsRemoved", true)
+			attacker.beac_sv_data.had_buffs_removed = true
 		end
 	end)
 	
@@ -271,7 +278,7 @@ if SERVER then
 	hook.Add("TTT2UpdateSubrole", "BeaconBackgroundCheck", function(self, oldSubrole, subrole)
 		if oldSubrole ~= ROLE_BEACON and subrole == ROLE_BEACON then
 			--Looks like someone thinks they can be a beacon.
-			if self:GetNWBool("HasKilledAnInnocent") then
+			if self.beac_sv_data.has_killed_inno then
 				--UNCOMMENT FOR DEBUGGING
 				--print("BEAC_DEBUG BeaconBackgroundCheck: Refusing to change role to Beacon")
 				
@@ -297,6 +304,21 @@ if SERVER then
 end
 
 if CLIENT then
+	local function ResetBeaconForClient()
+		--Initialize data that this client needs to know, but must be kept secret from other clients.
+		LocalPlayer().beac_cl_data = {}
+		LocalPlayer().beac_cl_data.num_buffs = 0
+	end
+	
+	--Do not reset beacon on TTTEndRound, because that will set num_buffs to 0 before RemoveRoleLoadout() is called.
+	hook.Add("TTTPrepareRound", "ResetBeacon", ResetBeaconForClient)
+	hook.Add("TTTBeginRound", "ResetBeacon", ResetBeaconForClient)
+
+	net.Receive("TTT2UpdateNumBeaconBuffs", function()
+		local num_buffs = net.ReadInt(16)
+		LocalPlayer().beac_cl_data.num_buffs = num_buffs
+	end)
+
 	--Modified from Pharoah's Ankh.
 	function BeaconDynamicLight(ply, color, brightness)
 		-- make sure initial values are set

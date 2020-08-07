@@ -100,6 +100,6 @@ if CLIENT then
 		end
 		if not bg_color then return end
 		
-		self:DrawComponent("Buffs Received: " .. client:GetNWInt("NumBeaconBuffs"), bg_color, icon_color)
+		self:DrawComponent("Buffs Received: " .. LocalPlayer().beac_cl_data.num_buffs, bg_color, icon_color)
 	end
 end
