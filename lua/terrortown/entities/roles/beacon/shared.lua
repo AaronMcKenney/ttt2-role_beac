@@ -292,13 +292,9 @@ if SERVER then
 	
 	hook.Add("TTT2SpecialRoleSyncing", "BeaconRoleSync", function(ply, tbl)
 		--This hook is needed to maintain a beacon's "glow" if they respawn or briefly change roles.
-		for ply_i in pairs(tbl) do
-			if ply_i:IsTerror() and ply_i:Alive() and ply_i:GetSubRole() == ROLE_BEACON and ply:GetNWBool("IsDetectiveBeacon") then
-				tbl[ply_i] = {ROLE_BEACON, TEAM_INNOCENT}
-				
-				--Resend this player's role info to everyone, as the info is lost when a role change occurs.
-				SendPlayerToEveryone(ply)
-			end
+		if ply:IsTerror() and ply:Alive() and ply:GetSubRole() == ROLE_BEACON and ply:GetNWBool("IsDetectiveBeacon") then
+			--Resend this player's role info to everyone, as the info is lost when a role change occurs.
+			SendPlayerToEveryone(ply)
 		end
 	end)
 end
