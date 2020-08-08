@@ -239,17 +239,13 @@ if SERVER then
 	hook.Add("TTTCanSearchCorpse", "BeaconUpdateOnCorpseSearch", function(ply, rag, isCovert, isLongRange)
 		local dead_ply = player.GetBySteamID64(rag.sid64)
 		
-		if not IsValid(dead_ply) or not IsValid(ply) then
+		--Don't do anything if the player searching the corpse isn't actively participating
+		if not IsValid(dead_ply) or not IsValid(ply) or not ply:Alive() then
 			return
 		end
 		
 		--Don't do anything if the round hasn't started yet.
 		if GetRoundState() ~= ROUND_ACTIVE then
-			return
-		end
-		
-		--Don't do anything if the player searching the corpse isn't actively participating
-		if not ply:Alive() then
 			return
 		end
 		
