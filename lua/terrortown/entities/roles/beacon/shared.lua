@@ -56,6 +56,11 @@ if SERVER then
 		end
 	end
 	
+	local function RoundHasNotBegun()
+		--Don't do anything if the round hasn't started yet (beac_sv_data may not exist)
+		return (GetRoundState() == ROUND_WAIT or GetRoundState() == ROUND_PREP)
+	end
+	
 	--Do not reset beacon on TTTEndRound, because that will set num_buffs to 0 before RemoveRoleLoadout() is called.
 	hook.Add("TTTPrepareRound", "ResetBeacon", ResetBeacon)
 	hook.Add("TTTBeginRound", "ResetBeacon", ResetBeacon)
@@ -184,12 +189,20 @@ if SERVER then
 	end
 	
 	hook.Add("TTTPlayerSpeedModifier", "BeaconModifySpeed", function(ply, _, _, no_lag)
+		if RoundHasNotBegun() then
+			return
+		end
+		
 		if IsValid(ply) and ply:IsPlayer() and ply:GetSubRole() == ROLE_BEACON then
 			no_lag[1] = no_lag[1] * (1 + ply.beac_sv_data.num_buffs * GetConVar("ttt2_beacon_speed_boost"):GetFloat())
 		end
 	end)
 	
 	hook.Add("EntityTakeDamage", "BeaconModifyDamage", function(target, dmg_info)
+		if RoundHasNotBegun() then
+			return
+		end
+		
 		local attacker = dmg_info:GetAttacker()
 		
 		if not IsValid(target) or not target:IsPlayer() or not IsValid(attacker) or not attacker:IsPlayer() then
@@ -202,6 +215,10 @@ if SERVER then
 	end)
 	
 	hook.Add("TTT2PostPlayerDeath", "JudgeTheBeacon", function(victim, inflictor, attacker)
+		if RoundHasNotBegun() then
+			return
+		end
+		
 		if not IsValid(victim) or not victim:IsPlayer() or not IsValid(attacker) or not attacker:IsPlayer() then
 			return
 		end
@@ -237,15 +254,14 @@ if SERVER then
 	end)
 	
 	hook.Add("TTTCanSearchCorpse", "BeaconUpdateOnCorpseSearch", function(ply, rag, isCovert, isLongRange)
+		if RoundHasNotBegun() then
+			return
+		end
+		
 		local dead_ply = player.GetBySteamID64(rag.sid64)
 		
 		--Don't do anything if the player searching the corpse isn't actively participating
 		if not IsValid(dead_ply) or not IsValid(ply) or not ply:Alive() then
-			return
-		end
-		
-		--Don't do anything if the round hasn't started yet.
-		if GetRoundState() ~= ROUND_ACTIVE then
 			return
 		end
 		
@@ -272,6 +288,10 @@ if SERVER then
 	end)
 	
 	hook.Add("TTT2UpdateSubrole", "BeaconBackgroundCheck", function(self, oldSubrole, subrole)
+		if RoundHasNotBegun() then
+			return
+		end
+		
 		if oldSubrole ~= ROLE_BEACON and subrole == ROLE_BEACON then
 			--Looks like someone thinks they can be a beacon.
 			if self.beac_sv_data.has_killed_inno then
@@ -298,8 +318,9 @@ end
 if CLIENT then
 	local function ResetBeaconForClient()
 		--Initialize data that this client needs to know, but must be kept secret from other clients.
-		LocalPlayer().beac_cl_data = {}
-		LocalPlayer().beac_cl_data.num_buffs = 0
+		local client = LocalPlayer()
+		client.beac_cl_data = {}
+		client.beac_cl_data.num_buffs = 0
 	end
 	
 	--Do not reset beacon on TTTEndRound, because that will set num_buffs to 0 before RemoveRoleLoadout() is called.
