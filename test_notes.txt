@@ -7,7 +7,8 @@ Buff Tests:
 --beacon is buffed if they search a bodyguard who was guarding an inno.
 --beacon does not receive multiple buffs if they search a dead inno multiple times.
 --unknown who becomes a beacon in the middle of the round receives public beacon buffs.
---beacon is buffed if they search a spy.
+--beacon is buffed if they search a spy and ttt2_spy_confirm_as_traitor is false.
+--beacon is not buffed if they search a spy and ttt2_spy_confirm_as_traitor is true.
 
 --Death and Role Switch Tests:
 --beacon does not receive multiple buffs from an inno who is revived/respawned multiple times.
@@ -30,6 +31,8 @@ Consequence Tests:
 --amnesiac who kills the beacon and investigates them becomes an innocent.
 --unknown who kills an innocent and then is killed by a beacon becomes an innocent instead.
 --beacon who becomes sidekick via jackal's sidekick deagle loses all of their buffs.
+--beacon who kills a spy when ttt2_spy_confirm_as_traitor is false behaves as if they killed an innocent.
+--beacon who kills a spy when ttt2_spy_confirm_as_traitor is true behaves as if they killed a traitor.
 
 ConVar Tests:
 --beacon receives min_buffs at round start if min_buffs > 0

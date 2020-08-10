@@ -61,6 +61,18 @@ if SERVER then
 		return (GetRoundState() == ROUND_WAIT or GetRoundState() == ROUND_PREP)
 	end
 	
+	local function GetObservedTeam(ply)
+		local team = ply:GetTeam()
+		
+		--Role-specific edge cases: Certain roles may actively lie about what their role actually is.
+		--However, this is only truly reflected after the info on the corpse has been compiled and sent.
+		if ply:GetSubRole() == ROLE_SPY and GetConVar("ttt2_spy_confirm_as_traitor"):GetBool() then
+			team = TEAM_TRAITOR
+		end
+		
+		return team
+	end
+	
 	--Do not reset beacon on TTTEndRound, because that will set num_buffs to 0 before RemoveRoleLoadout() is called.
 	hook.Add("TTTPrepareRound", "ResetBeacon", ResetBeacon)
 	hook.Add("TTTBeginRound", "ResetBeacon", ResetBeacon)
@@ -224,7 +236,7 @@ if SERVER then
 		end
 		
 		--It is ok for the beacon to murder the guilty
-		if not victim:HasTeam(TEAM_INNOCENT) then
+		if GetObservedTeam(victim) ~= TEAM_INNOCENT then
 			return
 		end
 		
@@ -265,11 +277,12 @@ if SERVER then
 			return
 		end
 		
+		local team = GetObservedTeam(dead_ply)
 		local do_buff = false
 		if GetConVar("ttt2_beacon_search_mode"):GetInt() == SEARCH_MODE.MATES then
-			do_buff = (dead_ply:GetTeam() == TEAM_INNOCENT)
+			do_buff = (team == TEAM_INNOCENT)
 		elseif GetConVar("ttt2_beacon_search_mode"):GetInt() == SEARCH_MODE.OTHER then
-			do_buff = (dead_ply:GetTeam() ~= TEAM_INNOCENT)
+			do_buff = (team ~= TEAM_INNOCENT)
 		else --SEARCH_MODE.ANY
 			do_buff = true
 		end
