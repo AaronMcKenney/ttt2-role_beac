@@ -48,6 +48,8 @@ if SERVER then
 			ply_i.beac_sv_data = {}
 			ply_i.beac_sv_data.had_buffs_removed = false
 			ply_i.beac_sv_data.has_killed_inno = false
+			ply_i.beac_sv_data.last_healed = 0
+			ply_i.beac_sv_data.hp_bank = 0
 			ply_i.beac_sv_data.buff_providers = {}
 			ply_i.beac_sv_data.num_buffs = 0
 			
@@ -240,6 +242,33 @@ if SERVER then
 		--if target:GetSubRole() == ROLE_BEACON or attacker:GetSubRole() == ROLE_BEACON then
 		--	print("BEAC_DEBUG BeaconModifyDamage After: " .. dmg_info:GetDamage())
 		--end
+	end)
+	
+	hook.Add("Think", "BeaconHealthRegen", function()
+		if RoundHasNotBegun() then
+			return
+		end
+		
+		local cur_time = CurTime()
+		for _, ply in ipairs(player.GetAll()) do
+			local ply_is_valid_beac = (IsValid(ply) and ply:IsPlayer() and ply:Alive() and ply:GetSubRole() == ROLE_BEACON)
+			local ply_can_be_healed = ((ply.beac_sv_data.last_healed) + 1 <= cur_time) and ply:Health() < ply:GetMaxHealth()
+			local healing_enabled_for_ply = (ply.beac_sv_data.num_buffs * GetConVar("ttt2_beacon_hp_regen_boost"):GetFloat() > 0)
+			if ply_is_valid_beac and ply_can_be_healed and healing_enabled_for_ply then
+				ply.beac_sv_data.last_healed = cur_time
+				ply.beac_sv_data.hp_bank = ply.beac_sv_data.hp_bank + ply.beac_sv_data.num_buffs * GetConVar("ttt2_beacon_hp_regen_boost"):GetFloat()
+				
+				--UNCOMMENT FOR DEBUGGING
+				--print("BEAC_DEBUG BeaconHealthRegen: hp_bank=" .. ply.beac_sv_data.hp_bank)
+				
+				if ply.beac_sv_data.hp_bank >= 1 then
+					--Since HP Regen ConVar is most likely a fraction, add it to a running total, and only heal when the total exceeds 1.
+					local heal = math.floor(ply.beac_sv_data.hp_bank)
+					ply:SetHealth(ply:Health() + heal)
+					ply.beac_sv_data.hp_bank = ply.beac_sv_data.hp_bank - heal
+				end
+			end
+		end
 	end)
 	
 	hook.Add("TTT2PostPlayerDeath", "JudgeTheBeacon", function(victim, inflictor, attacker)
