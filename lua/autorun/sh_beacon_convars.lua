@@ -6,7 +6,8 @@ CreateConVar("ttt2_beacon_search_mode", "0", {FCVAR_ARCHIVE, FCVAR_NOTFIY})
 CreateConVar("ttt2_beacon_judgement", "20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_speed_boost", "0.20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_jump_boost", "0.20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
-CreateConVar("ttt2_beacon_armor_boost", "20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
+CreateConVar("ttt2_beacon_resist_boost", "0.15", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
+CreateConVar("ttt2_beacon_armor_boost", "0", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_damage_boost", "0.15", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 
 hook.Add("TTTUlxDynamicRCVars", "TTTUlxDynamicBeaconCVars", function(tbl)
@@ -78,6 +79,15 @@ hook.Add("TTTUlxDynamicRCVars", "TTTUlxDynamicBeaconCVars", function(tbl)
 		decimal = 2,
 		desc = "ttt2_beacon_jump_boost (Def: 0.20)"
 	})
+	--"The flat damage resistance boost the beacon gets per buff (Def: 0.15)"
+	table.insert(tbl[ROLE_BEACON], {
+		cvar = "ttt2_beacon_resist_boost",
+		slider = true,
+		min = 0.0,
+		max = 0.9,
+		decimal = 2,
+		desc = "ttt2_beacon_resist_boost (Def: 0.15)"
+	})
 	--"The armor boost the beacon gets per buff (Def: 20)"
 	table.insert(tbl[ROLE_BEACON], {
 		cvar = "ttt2_beacon_armor_boost",
@@ -106,6 +116,7 @@ hook.Add("TTT2SyncGlobals", "AddBeaconGlobals", function()
 	SetGlobalInt("ttt2_beacon_judgement", GetConVar("ttt2_beacon_judgement"):GetInt())
 	SetGlobalFloat("ttt2_beacon_speed_boost", GetConVar("ttt2_beacon_speed_boost"):GetFloat())
 	SetGlobalFloat("ttt2_beacon_jump_boost", GetConVar("ttt2_beacon_jump_boost"):GetFloat())
+	SetGlobalFloat("ttt2_beacon_resist_boost", GetConVar("ttt2_beacon_resist_boost"):GetFloat())
 	SetGlobalInt("ttt2_beacon_armor_boost", GetConVar("ttt2_beacon_armor_boost"):GetInt())
 	SetGlobalFloat("ttt2_beacon_damage_boost", GetConVar("ttt2_beacon_damage_boost"):GetFloat())
 end)
@@ -130,6 +141,9 @@ cvars.AddChangeCallback("ttt2_beacon_speed_boost", function(name, old, new)
 end)
 cvars.AddChangeCallback("ttt2_beacon_jump_boost", function(name, old, new)
 	SetGlobalFloat("ttt2_beacon_jump_boost", tonumber(new))
+end)
+cvars.AddChangeCallback("ttt2_beacon_resist_boost", function(name, old, new)
+	SetGlobalFloat("ttt2_beacon_resist_boost", tonumber(new))
 end)
 cvars.AddChangeCallback("ttt2_beacon_armor_boost", function(name, old, new)
 	SetGlobalInt("ttt2_beacon_armor_boost", tonumber(new))

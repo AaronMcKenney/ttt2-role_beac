@@ -81,8 +81,9 @@ if SERVER then
 	--local function PrintBeaconStats(prefix_str, ply)
 	--	local n = ply.beac_sv_data.num_buffs
 	--	local speed = 1 + n * GetConVar("ttt2_beacon_speed_boost"):GetFloat()
+	--	local resist = n * GetConVar("ttt2_beacon_resist_boost"):GetFloat()
 	--	local dmg = 1 + n * GetConVar("ttt2_beacon_damage_boost"):GetFloat()
-	--	print(prefix_str, "name=", ply:GetName(), ", num_buffs=", n, ", speed=", speed, ", jump=", ply:GetJumpPower(), ", armor=", ply:GetArmor(), ", dmg=", dmg)
+	--	print(prefix_str, "name=", ply:GetName(), ", num_buffs=", n, ", speed=", speed, ", jump=", ply:GetJumpPower(), ", resist=", resist, ", armor=", ply:GetArmor(), ", dmg=", dmg)
 	--end
 	
 	local function UpdateBeaconStats(ply, n)
@@ -221,9 +222,24 @@ if SERVER then
 			return
 		end
 		
+		--UNCOMMENT FOR DEBUGGING
+		--if target:GetSubRole() == ROLE_BEACON or attacker:GetSubRole() == ROLE_BEACON then
+		--	print("BEAC_DEBUG BeaconModifyDamage Target Name=" .. target:GetName() .. ", Attacker Name=" .. attacker:GetName())
+		--	print("BEAC_DEBUG BeaconModifyDamage Before: " .. dmg_info:GetDamage())
+		--end
+		
+		if target:GetSubRole() == ROLE_BEACON then
+			dmg_info:SetDamage(dmg_info:GetDamage() * (1 - attacker.beac_sv_data.num_buffs * GetConVar("ttt2_beacon_resist_boost"):GetFloat()))
+		end
+		
 		if attacker:GetSubRole() == ROLE_BEACON then
 			dmg_info:SetDamage(dmg_info:GetDamage() * (1 + attacker.beac_sv_data.num_buffs * GetConVar("ttt2_beacon_damage_boost"):GetFloat()))
 		end
+		
+		--UNCOMMENT FOR DEBUGGING
+		--if target:GetSubRole() == ROLE_BEACON or attacker:GetSubRole() == ROLE_BEACON then
+		--	print("BEAC_DEBUG BeaconModifyDamage After: " .. dmg_info:GetDamage())
+		--end
 	end)
 	
 	hook.Add("TTT2PostPlayerDeath", "JudgeTheBeacon", function(victim, inflictor, attacker)
