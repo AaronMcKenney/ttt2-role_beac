@@ -90,6 +90,7 @@ if CLIENT then
 		local client = LocalPlayer()
 		local bg_color = self.basecolor
 		local icon_color = COLOR_BLACK
+		local max_buff_str = ""
 		self:SetIcon(icon_beac_unlit)
 		
 		if client:GetNWBool("IsDetectiveBeacon") then
@@ -100,6 +101,10 @@ if CLIENT then
 		end
 		if not bg_color then return end
 		
-		self:DrawComponent("Buffs Received: " .. LocalPlayer().beac_cl_data.num_buffs, bg_color, icon_color)
+		if client.beac_cl_data.num_buffs >= GetConVar("ttt2_beacon_max_buffs"):GetInt() then
+			max_buff_str = " (MAX POWER!)"
+		end
+		
+		self:DrawComponent("Buffs Received: " .. client.beac_cl_data.num_buffs .. max_buff_str, bg_color, icon_color)
 	end
 end
