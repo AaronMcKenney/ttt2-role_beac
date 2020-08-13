@@ -41,9 +41,20 @@ ConVar Tests:
 --If search_mode is SEARCH_OTHER, then beacon receives buffs on searching traitor/3rd party roles, but not innocent roles.
 --If search_mode is SEARCH_ALL, then beacon receives buffs from both traitor/3rd party roles as well as innocent roles.
 
---HUD Tests
+HUD Tests
 --beacon gains a "glow" when a certain number of dead innos are confirmed.
 --beacon's "glow" is removed if they die.
 --beacon's "glow" is removed if they change roles.
 --beacon's "glow" is returned if they respawn
 --becaon's "glow" is returned if they change to a non-beacon role and back into a beacon.
+
+Stat Tests:
+For each stat:
+--beacon gains correct amount of the stat when they are buffed.
+--the stat is reset to the default value when the beacon switches roles.
+--the stat is returned when the former beacon becomes a beacon again.
+--the stat is reset to the default value when the beacon kills an innocent.
+--if the beacon is quickly killed and then revived, the stat is the same amount that it was in their prior life.
+--For the fire rate stat, the weapon is correctly reset when dropped via the drop key.
+--For the fire rate stat, the weapon is correctly reset when dropped when switched.
+--For the fire rate stat, the weapon is correctly reset when dropped via death.

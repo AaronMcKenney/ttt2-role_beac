@@ -3,6 +3,7 @@ AddCSLuaFile()
 if SERVER then
 	resource.AddFile("materials/vgui/ttt/dynamic/roles/icon_beac.vmt")
 	util.AddNetworkString("TTT2UpdateNumBeaconBuffs")
+	util.AddNetworkString("TTT2BeaconRateOfFireUpdate")
 end
 
 function ROLE:PreInitialize()
@@ -41,6 +42,8 @@ if SERVER then
 	local DEFAULT_JUMP_POWER = 160
 	--ttt2_beacon_search_mode enum
 	local SEARCH_MODE = {MATES = 0, OTHER = 1, ANY = 2}
+	--enum for how the beacon's stats will be updated.
+	local UPDATE_MODE = {ONE = 0, ALL = 1}
 	
 	local function ResetBeacon()
 		for i, ply_i in ipairs(player.GetAll()) do
@@ -57,6 +60,9 @@ if SERVER then
 			ply_i:SetNWBool("IsDetectiveBeacon", false)
 		end
 	end
+	--Do not reset beacon on TTTEndRound, because that will set num_buffs to 0 before RemoveRoleLoadout() is called.
+	hook.Add("TTTPrepareRound", "ResetBeacon", ResetBeacon)
+	hook.Add("TTTBeginRound", "ResetBeacon", ResetBeacon)
 	
 	local function RoundHasNotBegun()
 		--Don't do anything if the round hasn't started yet (beac_sv_data may not exist)
@@ -75,22 +81,114 @@ if SERVER then
 		return team
 	end
 	
-	--Do not reset beacon on TTTEndRound, because that will set num_buffs to 0 before RemoveRoleLoadout() is called.
-	hook.Add("TTTPrepareRound", "ResetBeacon", ResetBeacon)
-	hook.Add("TTTBeginRound", "ResetBeacon", ResetBeacon)
-	
 	--UNCOMMENT FOR DEBUGGING
 	--local function PrintBeaconStats(prefix_str, ply)
 	--	local n = ply.beac_sv_data.num_buffs
 	--	local speed = 1 + n * GetConVar("ttt2_beacon_speed_boost"):GetFloat()
 	--	local resist = n * GetConVar("ttt2_beacon_resist_boost"):GetFloat()
+	--  local hp_regen = n * GetConVar("ttt2_beacon_hp_regen_boost"):GetFloat()
 	--	local dmg = 1 + n * GetConVar("ttt2_beacon_damage_boost"):GetFloat()
-	--	print(prefix_str, "name=", ply:GetName(), ", num_buffs=", n, ", speed=", speed, ", jump=", ply:GetJumpPower(), ", resist=", resist, ", armor=", ply:GetArmor(), ", dmg=", dmg)
+	--  local fire_rate = 1 + n * GetConVar("ttt2_beacon_fire_rate_boost"):GetFloat()
+	--	print(prefix_str, "name=", ply:GetName(), ", num_buffs=", n, ", speed=", speed, ", jump=", ply:GetJumpPower(), ", resist=", resist, ", armor=", ply:GetArmor(), ", hp_regen=", hp_regen, ", dmg=", dmg, ", fire_rate=", fire_rate)
 	--end
 	
-	local function UpdateBeaconStats(ply, n)
+	--WeaponSpeed functionality taken and modified from TTT2 Super Soda mod
+	local function ApplyWeaponSpeedForBeacon(wep, n)
+		local ply = wep.Owner
+		if RoundHasNotBegun() or not IsValid(wep) or not IsValid(ply) then
+			return
+		end
+		
+		if (wep.Kind == WEAPON_MELEE or wep.Kind == WEAPON_HEAVY or wep.Kind == WEAPON_PISTOL) then
+			if not wep.beac_modded then
+				wep.beac_modded = true
+			end
+			
+			--UNCOMMENT FOR DEBUGGING
+			print("BEAC_DEBUG ApplyWeaponSpeedForBeacon Before: ", wep.Primary.Delay)
+			
+			wep.Primary.Delay = wep.Primary.Delay / (1 + n * GetConVar("ttt2_beacon_fire_rate_boost"):GetFloat())
+			
+			--UNCOMMENT FOR DEBUGGING
+			print("BEAC_DEBUG ApplyWeaponSpeedForBeacon After: ", wep.Primary.Delay)
+
+			net.Start("TTT2BeaconRateOfFireUpdate")
+			net.WriteEntity(wep)
+			net.WriteFloat(wep.Primary.Delay)
+			net.Send(ply)
+		end
+	end
+	
+	local function DisableWeaponSpeedForBeacon(ply, wep, n)
+		if not IsValid(wep) or not IsValid(ply) then
+			return
+		end
+		
+		--Only remove speed if the weapon was tinkered with by the beacon.
+		--Prevents issue where the weapon may otherwise get stats removed multiple times on player death (Due to Drop and Switch being called).
+		if wep.beac_modded and (wep.Kind == WEAPON_MELEE or wep.Kind == WEAPON_HEAVY or wep.Kind == WEAPON_PISTOL) then
+			--UNCOMMENT FOR DEBUGGING
+			print("BEAC_DEBUG DisableWeaponSpeedForBeacon Before: ", wep.Primary.Delay)
+			
+			wep.Primary.Delay = wep.Primary.Delay * (1 + n * GetConVar("ttt2_beacon_fire_rate_boost"):GetFloat())
+			
+			--UNCOMMENT FOR DEBUGGING
+			print("BEAC_DEBUG DisableWeaponSpeedForBeacon After: ", wep.Primary.Delay)
+			
+			net.Start("TTT2BeaconRateOfFireUpdate")
+			net.WriteEntity(wep)
+			net.WriteFloat(wep.Primary.Delay)
+			net.Send(ply)
+			
+			wep.beac_modded = nil
+		end
+	end
+	
+	hook.Add("PlayerSwitchWeapon", "UpdateWeaponOnSwitchForBeacon", function(ply, old, new)
+		if RoundHasNotBegun() or not IsValid(old) or not IsValid(new) or not IsValid(ply) or ply:GetSubRole() ~= ROLE_BEACON then
+			return
+		end
+		
+		--UNCOMMENT FOR DEBUGGING
+		print("BEAC_DEBUG UpdateWeaponOnSwitchForBeacon")
+		
+		DisableWeaponSpeedForBeacon(ply, old, ply.beac_sv_data.num_buffs)
+		ApplyWeaponSpeedForBeacon(new, ply.beac_sv_data.num_buffs)
+	end)
+	
+	hook.Add("PlayerDroppedWeapon", "UpdateWeaponOnDropForBeacon", function(ply, wep)
+		if RoundHasNotBegun() or not IsValid(wep) or not IsValid(ply) or ply:GetSubRole() ~= ROLE_BEACON then
+			return
+		end
+		
+		--UNCOMMENT FOR DEBUGGING
+		print("BEAC_DEBUG UpdateWeaponOnDropForBeacon")
+
+		DisableWeaponSpeedForBeacon(ply, wep, ply.beac_sv_data.num_buffs)
+	end)
+	
+	local function UpdateBeaconStats(ply, update_mode)
 		--Speed is handled in TTTPlayerSpeedModifier handle.
-		--Damage is handled in EntityTakeDamage handle.
+		--Damage and Resistance is handled in EntityTakeDamage handle.
+		--Health Regen is handled in Think handle.
+		
+		local n = 1
+		if update_mode == UPDATE_MODE.ALL then
+			n = ply.beac_sv_data.num_buffs
+			
+			ApplyWeaponSpeedForBeacon(ply:GetActiveWeapon(), n)
+		else
+			if ply.beac_sv_data.num_buffs > 0 then
+				--This probably isn't the best method, but currently in order for the numbers to line up properly, need to remove the previous rate of fire buff and replace it with the new one.
+				--Specifically this is done to avoid quirks with division and multiplication. Would be easier if subtraction and addition could be used here.
+				DisableWeaponSpeedForBeacon(ply, ply:GetActiveWeapon(), ply.beac_sv_data.num_buffs - 1)
+				ApplyWeaponSpeedForBeacon(ply:GetActiveWeapon(), ply.beac_sv_data.num_buffs)
+			else
+				--First time we're buffing the beacon, just give them the one buff.
+				ApplyWeaponSpeedForBeacon(ply:GetActiveWeapon(), 1)
+			end
+		end
+		
 		ply:SetJumpPower(ply:GetJumpPower() + n * (DEFAULT_JUMP_POWER * GetConVar("ttt2_beacon_jump_boost"):GetFloat()))
 		ply:GiveArmor(n * GetConVar("ttt2_beacon_armor_boost"):GetInt())
 		
@@ -136,7 +234,7 @@ if SERVER then
 			
 			--Don't directly modify the stats of dead beacons or non-beacons.
 			if ply:Alive() and ply:GetSubRole() == ROLE_BEACON then
-				UpdateBeaconStats(ply, 1)
+				UpdateBeaconStats(ply, UPDATE_MODE.ONE)
 			end
 			
 			--Ensure that duplicate buffs aren't given.
@@ -162,9 +260,11 @@ if SERVER then
 		local n = ply.beac_sv_data.num_buffs
 		
 		--Speed is handled in TTTPlayerSpeedModifier handle.
-		--Damage is handled in EntityTakeDamage handle.
+		--Damage and Resistance is handled in EntityTakeDamage handle.
+		--Health Regeneration is handled in Think handle.
 		ply:SetJumpPower(ply:GetJumpPower() - n * (DEFAULT_JUMP_POWER * GetConVar("ttt2_beacon_jump_boost"):GetFloat()))
 		ply:RemoveArmor(n * GetConVar("ttt2_beacon_armor_boost"):GetInt())
+		DisableWeaponSpeedForBeacon(ply, ply:GetActiveWeapon(), n)
 		
 		if ply:HasEquipmentItem("item_ttt_nofalldmg") then
 			ply:RemoveEquipmentItem("item_ttt_nofalldmg")
@@ -181,12 +281,16 @@ if SERVER then
 	end
 	
 	function ROLE:GiveRoleLoadout(ply, isRoleChange)
+		if RoundHasNotBegun() then
+			return
+		end
+		
 		--Prevents edge case where murderous amnesiac is quickly given beacon buffs before becoming innocent
 		if not ply.beac_sv_data.has_killed_inno then
 			--UNCOMMENT FOR DEBUGGING
 			--print("BEAC_DEBUG GiveRoleLoadout")
 			
-			UpdateBeaconStats(ply, ply.beac_sv_data.num_buffs)
+			UpdateBeaconStats(ply, UPDATE_MODE.ALL)
 			
 			--Allow for the beacon to lose their stats again.
 			ply.beac_sv_data.had_buffs_removed = false
@@ -194,6 +298,10 @@ if SERVER then
 	end
 
 	function ROLE:RemoveRoleLoadout(ply, isRoleChange)
+		if RoundHasNotBegun() then
+			return
+		end
+		
 		--Sometimes RemoveRoleLoadout is called multiple times in a row, so here's a workaround.
 		if not ply.beac_sv_data.had_buffs_removed then
 			--UNCOMMENT FOR DEBUGGING
@@ -415,5 +523,10 @@ if CLIENT then
 				BeaconDynamicLight(ply, BEACON.color, 1)
 			end
 		end
+	end)
+	
+	net.Receive("TTT2BeaconRateOfFireUpdate", function()
+		local wep = net.ReadEntity()
+		wep.Primary.Delay = net.ReadFloat()
 	end)
 end

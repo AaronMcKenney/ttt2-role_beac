@@ -10,6 +10,7 @@ CreateConVar("ttt2_beacon_resist_boost", "0.15", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_armor_boost", "0", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_hp_regen_boost", "0.2", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_damage_boost", "0.15", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
+CreateConVar("ttt2_beacon_fire_rate_boost", "0.2", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 
 hook.Add("TTTUlxDynamicRCVars", "TTTUlxDynamicBeaconCVars", function(tbl)
 	tbl[ROLE_BEACON] = tbl[ROLE_BEACON] or {}
@@ -116,6 +117,15 @@ hook.Add("TTTUlxDynamicRCVars", "TTTUlxDynamicBeaconCVars", function(tbl)
 		decimal = 2,
 		desc = "ttt2_beacon_damage_boost (Def: 0.15)"
 	})
+	--"The fire rate boost the beacon gets per buff (Def: 0.2)"
+	table.insert(tbl[ROLE_BEACON], {
+		cvar = "ttt2_beacon_fire_rate_boost",
+		slider = true,
+		min = 0.0,
+		max = 3.5,
+		decimal = 2,
+		desc = "ttt2_beacon_fire_rate_boost (Def: 0.2)"
+	})
 end)
 
 hook.Add("TTT2SyncGlobals", "AddBeaconGlobals", function()
@@ -130,6 +140,7 @@ hook.Add("TTT2SyncGlobals", "AddBeaconGlobals", function()
 	SetGlobalInt("ttt2_beacon_armor_boost", GetConVar("ttt2_beacon_armor_boost"):GetInt())
 	SetGlobalFloat("ttt2_beacon_hp_regen_boost", GetConVar("ttt2_beacon_hp_regen_boost"):GetFloat())
 	SetGlobalFloat("ttt2_beacon_damage_boost", GetConVar("ttt2_beacon_damage_boost"):GetFloat())
+	SetGlobalFloat("ttt2_beacon_fire_rate_boost", GetConVar("ttt2_beacon_fire_rate_boost"):GetFloat())
 end)
 
 cvars.AddChangeCallback("ttt2_beacon_min_buffs", function(name, old, new)
@@ -164,4 +175,7 @@ cvars.AddChangeCallback("ttt2_beacon_hp_regen_boost", function(name, old, new)
 end)
 cvars.AddChangeCallback("ttt2_beacon_damage_boost", function(name, old, new)
 	SetGlobalFloat("ttt2_beacon_damage_boost", tonumber(new))
+end)
+cvars.AddChangeCallback("ttt2_beacon_fire_rate_boost", function(name, old, new)
+	SetGlobalFloat("ttt2_beacon_fire_rate_boost", tonumber(new))
 end)
