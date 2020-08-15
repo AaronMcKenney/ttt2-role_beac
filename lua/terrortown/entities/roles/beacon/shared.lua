@@ -105,12 +105,12 @@ if SERVER then
 			end
 			
 			--UNCOMMENT FOR DEBUGGING
-			print("BEAC_DEBUG ApplyWeaponSpeedForBeacon Before: ", wep.Primary.Delay)
+			--print("BEAC_DEBUG ApplyWeaponSpeedForBeacon Before: ", wep.Primary.Delay)
 			
 			wep.Primary.Delay = wep.Primary.Delay / (1 + n * GetConVar("ttt2_beacon_fire_rate_boost"):GetFloat())
 			
 			--UNCOMMENT FOR DEBUGGING
-			print("BEAC_DEBUG ApplyWeaponSpeedForBeacon After: ", wep.Primary.Delay)
+			--print("BEAC_DEBUG ApplyWeaponSpeedForBeacon After: ", wep.Primary.Delay)
 
 			net.Start("TTT2BeaconRateOfFireUpdate")
 			net.WriteEntity(wep)
@@ -128,12 +128,12 @@ if SERVER then
 		--Prevents issue where the weapon may otherwise get stats removed multiple times on player death (Due to Drop and Switch being called).
 		if wep.beac_modded and (wep.Kind == WEAPON_MELEE or wep.Kind == WEAPON_HEAVY or wep.Kind == WEAPON_PISTOL) then
 			--UNCOMMENT FOR DEBUGGING
-			print("BEAC_DEBUG DisableWeaponSpeedForBeacon Before: ", wep.Primary.Delay)
+			--print("BEAC_DEBUG DisableWeaponSpeedForBeacon Before: ", wep.Primary.Delay)
 			
 			wep.Primary.Delay = wep.Primary.Delay * (1 + n * GetConVar("ttt2_beacon_fire_rate_boost"):GetFloat())
 			
 			--UNCOMMENT FOR DEBUGGING
-			print("BEAC_DEBUG DisableWeaponSpeedForBeacon After: ", wep.Primary.Delay)
+			--print("BEAC_DEBUG DisableWeaponSpeedForBeacon After: ", wep.Primary.Delay)
 			
 			net.Start("TTT2BeaconRateOfFireUpdate")
 			net.WriteEntity(wep)
@@ -150,7 +150,7 @@ if SERVER then
 		end
 		
 		--UNCOMMENT FOR DEBUGGING
-		print("BEAC_DEBUG UpdateWeaponOnSwitchForBeacon")
+		--print("BEAC_DEBUG UpdateWeaponOnSwitchForBeacon")
 		
 		DisableWeaponSpeedForBeacon(ply, old, ply.beac_sv_data.num_buffs)
 		ApplyWeaponSpeedForBeacon(new, ply.beac_sv_data.num_buffs)
@@ -162,7 +162,7 @@ if SERVER then
 		end
 		
 		--UNCOMMENT FOR DEBUGGING
-		print("BEAC_DEBUG UpdateWeaponOnDropForBeacon")
+		--print("BEAC_DEBUG UpdateWeaponOnDropForBeacon")
 
 		DisableWeaponSpeedForBeacon(ply, wep, ply.beac_sv_data.num_buffs)
 	end)
@@ -497,14 +497,14 @@ if CLIENT then
 		local num_buffs = net.ReadInt(16)
 		LocalPlayer().beac_cl_data.num_buffs = num_buffs
 	end)
-
+	
 	--Modified from Pharoah's Ankh.
 	function BeaconDynamicLight(ply, color, brightness)
 		-- make sure initial values are set
 		if not ply.beac_light_next_state then
 			ply.beac_light_next_state = CurTime()
 		end
-
+		
 		--Create dynamic light
 		local dlight = DynamicLight(ply:EntIndex())
 		dlight.r = color.r
