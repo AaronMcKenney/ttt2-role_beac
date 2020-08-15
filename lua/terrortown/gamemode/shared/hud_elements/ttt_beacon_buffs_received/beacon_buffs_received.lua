@@ -101,10 +101,10 @@ if CLIENT then
 		end
 		if not bg_color then return end
 		
-		if client.beac_cl_data.num_buffs >= GetConVar("ttt2_beacon_max_buffs"):GetInt() then
+		if client.beac_cl_num_buffs >= GetConVar("ttt2_beacon_max_buffs"):GetInt() then
 			max_buff_str = " (MAX POWER!)"
 		end
 		
-		self:DrawComponent("Buffs Received: " .. client.beac_cl_data.num_buffs .. max_buff_str, bg_color, icon_color)
+		self:DrawComponent("Buffs Received: " .. client.beac_cl_num_buffs .. max_buff_str, bg_color, icon_color)
 	end
 end
