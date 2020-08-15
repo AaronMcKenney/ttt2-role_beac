@@ -498,9 +498,9 @@ if SERVER then
 			ply:SetNWBool("IsDetectiveBeacon", false)
 		end
 	end
-	hook.Add("TTTEndRound", "ResetBeaconForServer", ResetBeaconForServer)
-	hook.Add("TTTPrepareRound", "ResetBeaconForServer", ResetBeaconForServer)
-	hook.Add("TTTBeginRound", "ResetBeaconForServer", ResetBeaconForServer)
+	hook.Add("TTTEndRound", "ResetBeaconForServerOnEndRound", ResetBeaconForServer)
+	hook.Add("TTTPrepareRound", "ResetBeaconForServerOnPrepareRound", ResetBeaconForServer)
+	hook.Add("TTTBeginRound", "ResetBeaconForServerOnBeginRound", ResetBeaconForServer)
 end
 
 if CLIENT then
@@ -509,9 +509,9 @@ if CLIENT then
 		local client = LocalPlayer()
 		client.beac_cl_num_buffs = 0
 	end
-	hook.Add("TTTEndRound", "ResetBeaconForClient", ResetBeaconForClient)
-	hook.Add("TTTPrepareRound", "ResetBeaconForClient", ResetBeaconForClient)
-	hook.Add("TTTBeginRound", "ResetBeaconForClient", ResetBeaconForClient)
+	hook.Add("TTTEndRound", "ResetBeaconForClientOnEndRound", ResetBeaconForClient)
+	hook.Add("TTTPrepareRound", "ResetBeaconForClientOnPrepareRound", ResetBeaconForClient)
+	hook.Add("TTTBeginRound", "ResetBeaconForClientOnBeginRound", ResetBeaconForClient)
 
 	net.Receive("TTT2UpdateNumBeaconBuffs", function()
 		local client = LocalPlayer()
