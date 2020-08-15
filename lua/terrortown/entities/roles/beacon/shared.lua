@@ -156,7 +156,7 @@ if SERVER then
 	end)
 	
 	local function UpdateBeaconStats(ply, update_mode)
-		if RoundHasNotBegun() or not IsValid(ply) or not ply:IsPlayer() or not ply.beac_sv_data then
+		if not IsValid(ply) or not ply:IsPlayer() or not ply.beac_sv_data then
 			return
 		end
 		
@@ -274,34 +274,6 @@ if SERVER then
 		
 		--UNCOMMENT FOR DEBUGGING
 		--PrintBeaconStats("BEAC_DEBUG DebuffABeacon After: ", ply)
-	end
-	
-	function ROLE:GiveRoleLoadout(ply, isRoleChange)
-		if RoundHasNotBegun() or not ply.beac_sv_data then
-			return
-		end
-		
-		--Prevents edge case where murderous amnesiac is quickly given beacon buffs before becoming innocent
-		if not ply.beac_sv_data.has_killed_inno then
-			--UNCOMMENT FOR DEBUGGING
-			--print("BEAC_DEBUG GiveRoleLoadout")
-			
-			UpdateBeaconStats(ply, UPDATE_MODE.ALL)
-		end
-	end
-
-	function ROLE:RemoveRoleLoadout(ply, isRoleChange)
-		if RoundHasNotBegun() or not ply.beac_sv_data then
-			return
-		end
-		
-		--Sometimes RemoveRoleLoadout is called multiple times in a row, so here's a workaround.
-		if ply.beac_sv_data.has_buffs then
-			--UNCOMMENT FOR DEBUGGING
-			--print("BEAC_DEBUG RemoveRoleLoadout")
-			
-			DebuffABeacon(ply)
-		end
 	end
 	
 	hook.Add("TTTPlayerSpeedModifier", "BeaconModifySpeed", function(ply, _, _, no_lag)
@@ -471,47 +443,89 @@ if SERVER then
 		end
 	end)
 	
-	local function ResetBeaconForServer()
+	local function ResetBeaconPlayerDataForServer(ply)
+		local ply_was_debuffed = false
+		if ply.beac_sv_data and ply.beac_sv_data.has_buffs then
+			--Remove the beacon's buffs before they are reset.
+			--Typically this scenario will be hit if the beacon survives to the end of the round.
+			DebuffABeacon(ply)
+			ply_was_debuffed = true
+		end
+		
+		--Initialize player data that only the server must know about
+		ply.beac_sv_data = {}
+		ply.beac_sv_data.has_buffs = false
+		ply.beac_sv_data.has_killed_inno = false
+		ply.beac_sv_data.last_healed = 0
+		ply.beac_sv_data.hp_bank = 0
+		ply.beac_sv_data.buff_providers = {}
+		ply.beac_sv_data.num_buffs = GetConVar("ttt2_beacon_min_buffs"):GetInt()
+		if ply_was_debuffed then
+			--debuffed player loses all of their buffs, back to the default.
+			ply.beac_sv_data.num_buffs = 0
+		end
+		SendNumBuffsToClient(ply)
+		
+		--Initialize player data that anyone can pick up from the server at any time.
+		ply:SetNWBool("IsDetectiveBeacon", false)
+	end
+	
+	local function ResetAllBeaconDataForServer()
 		for i, ply in ipairs(player.GetAll()) do
-			local ply_was_debuffed = false
-			if ply.beac_sv_data and ply.beac_sv_data.has_buffs then
-				--Remove the beacon's buffs before they are reset.
-				DebuffABeacon(ply)
-				ply_was_debuffed = true
+			if not ply.beac_sv_data then
+				ResetBeaconPlayerDataForServer(ply)
 			end
-			
-			--Initialize player data that only the server must know about
-			ply.beac_sv_data = {}
-			ply.beac_sv_data.has_buffs = false
-			ply.beac_sv_data.has_killed_inno = false
-			ply.beac_sv_data.last_healed = 0
-			ply.beac_sv_data.hp_bank = 0
-			ply.beac_sv_data.buff_providers = {}
-			ply.beac_sv_data.num_buffs = GetConVar("ttt2_beacon_min_buffs"):GetInt()
-			if ply_was_debuffed then
-				--debuffed player loses all of their buffs, back to the default.
-				ply.beac_sv_data.num_buffs = 0
-			end
-			SendNumBuffsToClient(ply)
-			
-			--Initialize player data that anyone can pick up from the server at any time.
-			ply:SetNWBool("IsDetectiveBeacon", false)
 		end
 	end
-	hook.Add("TTTEndRound", "ResetBeaconForServerOnEndRound", ResetBeaconForServer)
-	hook.Add("TTTPrepareRound", "ResetBeaconForServerOnPrepareRound", ResetBeaconForServer)
-	hook.Add("TTTBeginRound", "ResetBeaconForServerOnBeginRound", ResetBeaconForServer)
+	hook.Add("TTTEndRound", "ResetBeaconForServerOnEndRound", ResetAllBeaconDataForServer)
+	hook.Add("TTTPrepareRound", "ResetBeaconForServerOnPrepareRound", ResetAllBeaconDataForServer)
+	hook.Add("TTTBeginRound", "ResetBeaconForServerOnBeginRound", ResetAllBeaconDataForServer)
+	
+	function ROLE:GiveRoleLoadout(ply, isRoleChange)
+		if not ply.beac_sv_data then
+			--GiveRoleLoadout is called before the round has begun proper.
+			--This is the best way of ensuring that a player who starts the round as a beacon is properly set up.
+			ResetBeaconPlayerDataForServer(ply)
+		end
+		
+		--If condition prevents edge case where murderous amnesiac is quickly given beacon buffs before becoming innocent
+		if not ply.beac_sv_data.has_killed_inno then
+			--UNCOMMENT FOR DEBUGGING
+			--print("BEAC_DEBUG GiveRoleLoadout")
+			
+			--Send # of buffs here because client may try to override the value when the round begins.
+			SendNumBuffsToClient(ply)
+			
+			UpdateBeaconStats(ply, UPDATE_MODE.ALL)
+		end
+	end
+
+	function ROLE:RemoveRoleLoadout(ply, isRoleChange)
+		if RoundHasNotBegun() or not ply.beac_sv_data then
+			return
+		end
+		
+		--Sometimes RemoveRoleLoadout is called multiple times in a row, so here's a workaround.
+		if ply.beac_sv_data.has_buffs then
+			--UNCOMMENT FOR DEBUGGING
+			--print("BEAC_DEBUG RemoveRoleLoadout")
+			
+			DebuffABeacon(ply)
+		end
+	end
 end
 
 if CLIENT then
-	local function ResetBeaconForClient()
+	local function ResetBeaconPlayerDataForClient()
 		--Initialize data that this client needs to know, but must be kept secret from other clients.
 		local client = LocalPlayer()
-		client.beac_cl_num_buffs = 0
+		if not client.beac_cl_num_buffs then
+			client.beac_cl_num_buffs = 0
+		end
 	end
-	hook.Add("TTTEndRound", "ResetBeaconForClientOnEndRound", ResetBeaconForClient)
-	hook.Add("TTTPrepareRound", "ResetBeaconForClientOnPrepareRound", ResetBeaconForClient)
-	hook.Add("TTTBeginRound", "ResetBeaconForClientOnBeginRound", ResetBeaconForClient)
+	hook.Add("TTTEndRound", "ResetBeaconForClientOnEndRound", ResetBeaconPlayerDataForClient)
+	hook.Add("TTTPrepareRound", "ResetBeaconForClientOnPrepareRound", ResetBeaconPlayerDataForClient)
+	hook.Add("TTTBeginRound", "ResetBeaconForClientOnBeginRound", ResetBeaconPlayerDataForClient)
 
 	net.Receive("TTT2UpdateNumBeaconBuffs", function()
 		local client = LocalPlayer()
