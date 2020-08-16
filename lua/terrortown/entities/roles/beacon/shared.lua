@@ -448,7 +448,7 @@ if SERVER then
 	end)
 	
 	local function ResetBeaconPlayerDataForServer(ply)
-		if not ply.beac_sv_data or not ply.beac_sv_data.skip_next_reset then
+		if not ply.beac_sv_data.skip_next_reset then
 			--UNCOMMENT FOR DEBUGGING
 			--print("BEAC_DEBUG ResetBeaconPlayerDataForServer: Resetting player " .. ply:GetName())
 			
