@@ -41,7 +41,7 @@ if SERVER then
 	--Hardcoded default that everyone uses.
 	local DEFAULT_JUMP_POWER = 160
 	--ttt2_beacon_search_mode enum
-	local SEARCH_MODE = {MATES = 0, OTHER = 1, ANY = 2}
+	local SEARCH_MODE = {MATES = 0, OTHER = 1, ANY = 2, NONE = 3}
 	--enum for how the beacon's stats will be updated.
 	local UPDATE_MODE = {ONE = 0, ALL = 1}
 	
@@ -199,7 +199,7 @@ if SERVER then
 		ply.beac_sv_data.has_buffs = true
 	end
 	
-	local function GiveBeaconBuffToPlayer(ply, provider_id)
+	local function GiveBeaconBuffToPlayer(ply, provider_id, provider_is_client)
 		if RoundHasNotBegun() or not IsValid(ply) or not ply:IsPlayer() or not ply.beac_sv_data then
 			return
 		end
@@ -210,12 +210,13 @@ if SERVER then
 		end
 		
 		--Beacon can't be their own provider
-		if ply:SteamID64() == provider_id then
+		if provider_is_client and ply:SteamID64() == provider_id then
 			return
 		end
 		
 		--Only buff the given beacon if they have not already been buffed by the provider.
-		if ply.beac_sv_data.buff_providers[provider_id] == nil then
+		--We can also buff the given beacon if the server demands it (not provider_is_client)
+		if not provider_is_client or ply.beac_sv_data.buff_providers[provider_id] == nil then
 			--UNCOMMENT FOR DEBUGGING
 			--PrintBeaconStats("BEAC_DEBUG UpdateBeaconStats Before: ", ply)
 			
@@ -229,8 +230,10 @@ if SERVER then
 				UpdateBeaconStats(ply, UPDATE_MODE.ONE)
 			end
 			
-			--Ensure that duplicate buffs aren't given.
-			ply.beac_sv_data.buff_providers[provider_id] = true
+			if provider_is_client then
+				--Ensure that duplicate buffs aren't given.
+				ply.beac_sv_data.buff_providers[provider_id] = true
+			end
 			
 			--UNCOMMENT FOR DEBUGGING
 			--PrintBeaconStats("BEAC_DEBUG UpdateBeaconStats After: ", ply)
@@ -239,7 +242,7 @@ if SERVER then
 	
 	local function GiveBeaconBuffToAllPlayers(provider_id)
 		for _,ply in pairs(player.GetAll()) do
-			GiveBeaconBuffToPlayer(ply, provider_id)
+			GiveBeaconBuffToPlayer(ply, provider_id, true)
 		end
 	end
 	
@@ -317,31 +320,48 @@ if SERVER then
 		--end
 	end)
 	
-	hook.Add("Think", "BeaconHealthRegen", function()
-		if RoundHasNotBegun() then
+	local function BeaconHealthRegen(ply, cur_time)
+		local ply_can_be_healed = ((ply.beac_sv_data.last_healed) + 1 <= cur_time) and ply:Health() < ply:GetMaxHealth()
+		local healing_enabled_for_ply = (ply.beac_sv_data.num_buffs * GetConVar("ttt2_beacon_hp_regen_boost"):GetFloat() > 0)
+		if ply_can_be_healed and healing_enabled_for_ply then
+			ply.beac_sv_data.last_healed = cur_time
+			ply.beac_sv_data.hp_bank = ply.beac_sv_data.hp_bank + ply.beac_sv_data.num_buffs * GetConVar("ttt2_beacon_hp_regen_boost"):GetFloat()
+			
+			--UNCOMMENT FOR DEBUGGING
+			--print("BEAC_DEBUG BeaconHealthRegen: hp_bank=" .. ply.beac_sv_data.hp_bank)
+			
+			if ply.beac_sv_data.hp_bank >= 1 then
+				--Since HP Regen ConVar is most likely a fraction, add it to a running total, and only heal when the total exceeds 1.
+				local heal = math.floor(ply.beac_sv_data.hp_bank)
+				ply:SetHealth(ply:Health() + heal)
+				ply.beac_sv_data.hp_bank = ply.beac_sv_data.hp_bank - heal
+			end
+		end
+	end
+	
+	local function BeaconBuffOnTimeInterval(ply, cur_time)
+		local time_interval = GetConVar("ttt2_beacon_buff_every_x_seconds"):GetInt()
+		if time_interval > 0 then
+			if not ply.beac_sv_data.next_time_buffed or ply.beac_sv_data.next_time_buffed < 0 then
+				ply.beac_sv_data.next_time_buffed = cur_time + time_interval
+			elseif cur_time >= ply.beac_sv_data.next_time_buffed then
+				--This is a special case, where the server is providing the buff, not any dead player.
+				GiveBeaconBuffToPlayer(ply, nil, false)
+				ply.beac_sv_data.next_time_buffed = cur_time + time_interval
+			end
+		end
+	end
+	
+	hook.Add("Think", "BeaconThink", function()
+		if GetRoundState() ~= ROUND_ACTIVE then
 			return
 		end
 		
 		local cur_time = CurTime()
 		for _, ply in ipairs(player.GetAll()) do
-			if ply.beac_sv_data then
-				local ply_is_valid_beac = (IsValid(ply) and ply:IsPlayer() and ply:Alive() and ply:GetSubRole() == ROLE_BEACON)
-				local ply_can_be_healed = ((ply.beac_sv_data.last_healed) + 1 <= cur_time) and ply:Health() < ply:GetMaxHealth()
-				local healing_enabled_for_ply = (ply.beac_sv_data.num_buffs * GetConVar("ttt2_beacon_hp_regen_boost"):GetFloat() > 0)
-				if ply_is_valid_beac and ply_can_be_healed and healing_enabled_for_ply then
-					ply.beac_sv_data.last_healed = cur_time
-					ply.beac_sv_data.hp_bank = ply.beac_sv_data.hp_bank + ply.beac_sv_data.num_buffs * GetConVar("ttt2_beacon_hp_regen_boost"):GetFloat()
-					
-					--UNCOMMENT FOR DEBUGGING
-					--print("BEAC_DEBUG BeaconHealthRegen: hp_bank=" .. ply.beac_sv_data.hp_bank)
-					
-					if ply.beac_sv_data.hp_bank >= 1 then
-						--Since HP Regen ConVar is most likely a fraction, add it to a running total, and only heal when the total exceeds 1.
-						local heal = math.floor(ply.beac_sv_data.hp_bank)
-						ply:SetHealth(ply:Health() + heal)
-						ply.beac_sv_data.hp_bank = ply.beac_sv_data.hp_bank - heal
-					end
-				end
+			if IsValid(ply) and ply:IsPlayer() and ply:Alive() and ply.beac_sv_data and ply:GetSubRole() == ROLE_BEACON then
+				BeaconHealthRegen(ply, cur_time)
+				BeaconBuffOnTimeInterval(ply, cur_time)
 			end
 		end
 	end)
@@ -356,9 +376,12 @@ if SERVER then
 			return (team == TEAM_INNOCENT)
 		elseif GetConVar("ttt2_beacon_search_mode"):GetInt() == SEARCH_MODE.OTHER then
 			return (team ~= TEAM_INNOCENT)
-		else --SEARCH_MODE.ANY
+		elseif GetConVar("ttt2_beacon_search_mode"):GetInt() == SEARCH_MODE.ANY then
 			return true
 		end
+		
+		--SEARCH_MODE.NONE
+		return false
 	end
 	
 	hook.Add("TTT2PostPlayerDeath", "JudgeTheBeacon", function(victim, inflictor, attacker)
@@ -413,7 +436,7 @@ if SERVER then
 			
 			if isCovert then
 				--Only update the player that's covertly searching the body.
-				GiveBeaconBuffToPlayer(ply, dead_ply:SteamID64())
+				GiveBeaconBuffToPlayer(ply, dead_ply:SteamID64(), true)
 			else
 				GiveBeaconBuffToAllPlayers(dead_ply:SteamID64())
 			end
@@ -448,7 +471,7 @@ if SERVER then
 	end)
 	
 	local function ResetBeaconPlayerDataForServer(ply)
-		if not ply.beac_sv_data.skip_next_reset then
+		if not ply.beac_sv_data or not ply.beac_sv_data.skip_next_reset then
 			--UNCOMMENT FOR DEBUGGING
 			--print("BEAC_DEBUG ResetBeaconPlayerDataForServer: Resetting player " .. ply:GetName())
 			
@@ -467,6 +490,7 @@ if SERVER then
 			ply.beac_sv_data = {}
 			ply.beac_sv_data.has_buffs = false
 			ply.beac_sv_data.has_killed_inno = false
+			ply.beac_sv_data.next_time_buffed = -1
 			ply.beac_sv_data.last_healed = 0
 			ply.beac_sv_data.hp_bank = 0
 			ply.beac_sv_data.buff_providers = {}

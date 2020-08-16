@@ -40,7 +40,9 @@ ConVar Tests:
 --If search_mode is SEARCH_MATES, then the beacon does not receive buffs on searching traitor/3rd party roles.
 --If search_mode is SEARCH_OTHER, then the beacon receives buffs on searching traitor/3rd party roles, but not innocent roles.
 --If search_mode is SEARCH_ALL, then the beacon receives buffs from both traitor/3rd party roles as well as innocent roles.
---If buff_on_death is enabled,, then the beacon receives buffs when a player dies (depending on value of search_mode)
+--If search_mode is SEARCH_NONE, then the beacon receives no buffs from any player activity.
+--If buff_on_death is enabled, then the beacon receives buffs when a player dies (depending on value of search_mode)
+--If ttt2_beacon_buff_every_x_seconds is >0, then the beacon receives buffs at the provided time interval.
 
 HUD Tests
 --beacon gains a "glow" when a certain number of dead innos are confirmed.

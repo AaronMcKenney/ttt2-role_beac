@@ -4,6 +4,7 @@ CreateConVar("ttt2_beacon_max_buffs", "5", {FCVAR_ARCHIVE, FCVAR_NOTFIY})
 CreateConVar("ttt2_beacon_deputize_num_buffs", "3", {FCVAR_ARCHIVE, FCVAR_NOTFIY})
 CreateConVar("ttt2_beacon_search_mode", "0", {FCVAR_ARCHIVE, FCVAR_NOTFIY})
 CreateConVar("ttt2_beacon_buff_on_death", "0", {FCVAR_ARCHIVE, FCVAR_NOTFIY})
+CreateConVar("ttt2_beacon_buff_every_x_seconds", "0", {FCVAR_ARCHIVE, FCVAR_NOTFIY})
 CreateConVar("ttt2_beacon_judgement", "20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_speed_boost", "0.20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_jump_boost", "0.20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
@@ -43,7 +44,7 @@ hook.Add("TTTUlxDynamicRCVars", "TTTUlxDynamicBeaconCVars", function(tbl)
 		decimal = 0,
 		desc = "ttt2_beacon_deputize_num_buffs (Def: 3)"
 	})
-	--"Beacon gains buff when these players are confirmed dead: {0: team mates, 1: non team mates, 2: anyone} (Def: 0)"
+	--"Beacon gains buff when these players are confirmed dead: {0: team mates, 1: non team mates, 2: anyone, 3: No one} (Def: 0)"
 	table.insert(tbl[ROLE_BEACON], {
 		cvar = "ttt2_beacon_search_mode",
 		combobox = true,
@@ -51,7 +52,8 @@ hook.Add("TTTUlxDynamicRCVars", "TTTUlxDynamicBeaconCVars", function(tbl)
 		choices = {
 			"0 - Buff on confirmed team mate death",
 			"1 - Buff on confirmed non team mate death",
-			"2 - Buff on all confirmed deaths"
+			"2 - Buff on all confirmed deaths",
+			"3 - Do not buff based on death"
 		},
 		numStart = 0
 	})
@@ -60,6 +62,15 @@ hook.Add("TTTUlxDynamicRCVars", "TTTUlxDynamicBeaconCVars", function(tbl)
 		cvar = "ttt2_beacon_buff_on_death",
 		checkbox = true,
 		desc = "ttt2_beacon_buff_on_death (Def: 0)"
+	})
+	--"Beacon receives a buff every x seconds (Disabled if x is 0). (Def: 0)"
+	table.insert(tbl[ROLE_BEACON], {
+		cvar = "ttt2_beacon_buff_every_x_seconds",
+		slider = true,
+		min = 0,
+		max = 600,
+		decimal = 0,
+		desc = "ttt2_beacon_buff_every_x_seconds (Def: 0)"
 	})
 	--"The damage the beacon receives if they kill one of their mates (Def: 20)"
 	table.insert(tbl[ROLE_BEACON], {
@@ -141,6 +152,7 @@ hook.Add("TTT2SyncGlobals", "AddBeaconGlobals", function()
 	SetGlobalInt("ttt2_beacon_deputize_num_buffs", GetConVar("ttt2_beacon_deputize_num_buffs"):GetInt())
 	SetGlobalInt("ttt2_beacon_search_mode", GetConVar("ttt2_beacon_search_mode"):GetInt())
 	SetGlobalBool("ttt2_beacon_buff_on_death", GetConVar("ttt2_beacon_buff_on_death"):GetBool())
+	SetGlobalInt("ttt2_beacon_buff_every_x_seconds", GetConVar("ttt2_beacon_buff_every_x_seconds"):GetInt())
 	SetGlobalInt("ttt2_beacon_judgement", GetConVar("ttt2_beacon_judgement"):GetInt())
 	SetGlobalFloat("ttt2_beacon_speed_boost", GetConVar("ttt2_beacon_speed_boost"):GetFloat())
 	SetGlobalFloat("ttt2_beacon_jump_boost", GetConVar("ttt2_beacon_jump_boost"):GetFloat())
@@ -165,6 +177,9 @@ cvars.AddChangeCallback("ttt2_beacon_search_mode", function(name, old, new)
 end)
 cvars.AddChangeCallback("ttt2_beacon_buff_on_death", function(name, old, new)
 	SetGlobalBool("ttt2_beacon_buff_on_death", tobool(tonumber(new)))
+end)
+cvars.AddChangeCallback("ttt2_beacon_buff_every_x_seconds", function(name, old, new)
+	SetGlobalInt("ttt2_beacon_buff_every_x_seconds", tonumber(new))
 end)
 cvars.AddChangeCallback("ttt2_beacon_judgement", function(name, old, new)
 	SetGlobalInt("ttt2_beacon_judgement", tonumber(new))
