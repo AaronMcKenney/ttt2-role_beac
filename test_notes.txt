@@ -37,9 +37,10 @@ Consequence Tests:
 ConVar Tests:
 --beacon receives min_buffs at round start if min_buffs > 0
 --beacon cannot receive more than max_buffs if they search more than max_buffs dead innos bodies
---If search_mode is SEARCH_MATES, then beacon does not receive buffs on searching traitor/3rd party roles.
---If search_mode is SEARCH_OTHER, then beacon receives buffs on searching traitor/3rd party roles, but not innocent roles.
---If search_mode is SEARCH_ALL, then beacon receives buffs from both traitor/3rd party roles as well as innocent roles.
+--If search_mode is SEARCH_MATES, then the beacon does not receive buffs on searching traitor/3rd party roles.
+--If search_mode is SEARCH_OTHER, then the beacon receives buffs on searching traitor/3rd party roles, but not innocent roles.
+--If search_mode is SEARCH_ALL, then the beacon receives buffs from both traitor/3rd party roles as well as innocent roles.
+--If buff_on_death is enabled,, then the beacon receives buffs when a player dies (depending on value of search_mode)
 
 HUD Tests
 --beacon gains a "glow" when a certain number of dead innos are confirmed.

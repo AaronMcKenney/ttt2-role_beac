@@ -3,6 +3,7 @@ CreateConVar("ttt2_beacon_min_buffs", "0", {FCVAR_ARCHIVE, FCVAR_NOTFIY})
 CreateConVar("ttt2_beacon_max_buffs", "5", {FCVAR_ARCHIVE, FCVAR_NOTFIY})
 CreateConVar("ttt2_beacon_deputize_num_buffs", "3", {FCVAR_ARCHIVE, FCVAR_NOTFIY})
 CreateConVar("ttt2_beacon_search_mode", "0", {FCVAR_ARCHIVE, FCVAR_NOTFIY})
+CreateConVar("ttt2_beacon_buff_on_death", "0", {FCVAR_ARCHIVE, FCVAR_NOTFIY})
 CreateConVar("ttt2_beacon_judgement", "20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_speed_boost", "0.20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_jump_boost", "0.20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
@@ -53,6 +54,12 @@ hook.Add("TTTUlxDynamicRCVars", "TTTUlxDynamicBeaconCVars", function(tbl)
 			"2 - Buff on all confirmed deaths"
 		},
 		numStart = 0
+	})
+	--"Beacon is buffed automatically when mate/non-mate/anyone dies (depending on seach_mode) (Def: 0)"
+	table.insert(tbl[ROLE_BEACON], {
+		cvar = "ttt2_beacon_buff_on_death",
+		checkbox = true,
+		desc = "ttt2_beacon_buff_on_death (Def: 0)"
 	})
 	--"The damage the beacon receives if they kill one of their mates (Def: 20)"
 	table.insert(tbl[ROLE_BEACON], {
@@ -133,6 +140,7 @@ hook.Add("TTT2SyncGlobals", "AddBeaconGlobals", function()
 	SetGlobalInt("ttt2_beacon_max_buffs", GetConVar("ttt2_beacon_max_buffs"):GetInt())
 	SetGlobalInt("ttt2_beacon_deputize_num_buffs", GetConVar("ttt2_beacon_deputize_num_buffs"):GetInt())
 	SetGlobalInt("ttt2_beacon_search_mode", GetConVar("ttt2_beacon_search_mode"):GetInt())
+	SetGlobalBool("ttt2_beacon_buff_on_death", GetConVar("ttt2_beacon_buff_on_death"):GetBool())
 	SetGlobalInt("ttt2_beacon_judgement", GetConVar("ttt2_beacon_judgement"):GetInt())
 	SetGlobalFloat("ttt2_beacon_speed_boost", GetConVar("ttt2_beacon_speed_boost"):GetFloat())
 	SetGlobalFloat("ttt2_beacon_jump_boost", GetConVar("ttt2_beacon_jump_boost"):GetFloat())
@@ -154,6 +162,9 @@ cvars.AddChangeCallback("ttt2_beacon_deputize_num_buffs", function(name, old, ne
 end)
 cvars.AddChangeCallback("ttt2_beacon_search_mode", function(name, old, new)
 	SetGlobalInt("ttt2_beacon_search_mode", tonumber(new))
+end)
+cvars.AddChangeCallback("ttt2_beacon_buff_on_death", function(name, old, new)
+	SetGlobalBool("ttt2_beacon_buff_on_death", tobool(tonumber(new)))
 end)
 cvars.AddChangeCallback("ttt2_beacon_judgement", function(name, old, new)
 	SetGlobalInt("ttt2_beacon_judgement", tonumber(new))

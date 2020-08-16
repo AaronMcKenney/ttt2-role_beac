@@ -346,8 +346,23 @@ if SERVER then
 		end
 	end)
 	
+	local function CanReceiveBuffFromDeadPlayer(dead_ply)
+		if GetRoundState() ~= ROUND_ACTIVE or not IsValid(dead_ply) or not dead_ply:IsPlayer() then
+			return false
+		end
+		
+		local team = GetObservedTeam(dead_ply)
+		if GetConVar("ttt2_beacon_search_mode"):GetInt() == SEARCH_MODE.MATES then
+			return (team == TEAM_INNOCENT)
+		elseif GetConVar("ttt2_beacon_search_mode"):GetInt() == SEARCH_MODE.OTHER then
+			return (team ~= TEAM_INNOCENT)
+		else --SEARCH_MODE.ANY
+			return true
+		end
+	end
+	
 	hook.Add("TTT2PostPlayerDeath", "JudgeTheBeacon", function(victim, inflictor, attacker)
-		if RoundHasNotBegun() or not attacker.beac_sv_data then
+		if GetRoundState() ~= ROUND_ACTIVE or not attacker.beac_sv_data then
 			return
 		end
 		
@@ -355,29 +370,28 @@ if SERVER then
 			return
 		end
 		
-		--It is ok for the beacon to murder the guilty
-		if GetObservedTeam(victim) ~= TEAM_INNOCENT then
-			return
+		local was_a_suicide = (victim:SteamID64() == attacker:SteamID64())
+		local killed_an_inno = (GetObservedTeam(victim) == TEAM_INNOCENT)
+		
+		if not was_a_suicide and killed_an_inno then
+			--UNCOMMENT FOR DEBUGGING
+			--print("BEAC_DEBUG BeaconUpdateOnDeath: Preventing inno-killer from being beacon.")
+			
+			--Prevent any role (ex. amnesiac) from becoming a beacon if they kill an innocent.
+			attacker.beac_sv_data.has_killed_inno = true
+		
+			if attacker:GetSubRole() == ROLE_BEACON then
+				--Demote the guilty one.
+				--Indirectly calls DebuffABeacon()
+				attacker:SetRole(ROLE_INNOCENT)
+				--Call this whenever a role change occurs during an active round
+				SendFullStateUpdate()
+				attacker:TakeDamage(GetConVar("ttt2_beacon_judgement"):GetInt(), game.GetWorld())
+			end
 		end
 		
-		--It is ok if the beacon suicides (especially since it was likely an accident)
-		if victim:SteamID64() == attacker:SteamID64() then
-			return
-		end
-		
-		--UNCOMMENT FOR DEBUGGING
-		--print("BEAC_DEBUG BeaconUpdateOnDeath: Preventing inno-killer from being beacon.")
-		
-		--Prevent any role (ex. amnesiac) from becoming a beacon if they kill an innocent.
-		attacker.beac_sv_data.has_killed_inno = true
-		
-		if attacker:GetSubRole() == ROLE_BEACON then
-			--Demote the guilty one.
-			--Indirectly calls DebuffABeacon()
-			attacker:SetRole(ROLE_INNOCENT)
-			--Call this whenever a role change occurs during an active round
-			SendFullStateUpdate()
-			attacker:TakeDamage(GetConVar("ttt2_beacon_judgement"):GetInt(), game.GetWorld())
+		if GetConVar("ttt2_beacon_buff_on_death"):GetBool() and CanReceiveBuffFromDeadPlayer(victim) then
+			GiveBeaconBuffToAllPlayers(victim:SteamID64())
 		end
 	end)
 	
@@ -393,17 +407,7 @@ if SERVER then
 			return
 		end
 		
-		local team = GetObservedTeam(dead_ply)
-		local do_buff = false
-		if GetConVar("ttt2_beacon_search_mode"):GetInt() == SEARCH_MODE.MATES then
-			do_buff = (team == TEAM_INNOCENT)
-		elseif GetConVar("ttt2_beacon_search_mode"):GetInt() == SEARCH_MODE.OTHER then
-			do_buff = (team ~= TEAM_INNOCENT)
-		else --SEARCH_MODE.ANY
-			do_buff = true
-		end
-		
-		if do_buff then
+		if CanReceiveBuffFromDeadPlayer(dead_ply) then
 			--UNCOMMENT FOR DEBUGGING
 			--print("BEAC_DEBUG BeaconUpdateOnCorpseSearch: isCovert=", isCovert, ", ID=", dead_ply:SteamID64())
 			
@@ -444,37 +448,49 @@ if SERVER then
 	end)
 	
 	local function ResetBeaconPlayerDataForServer(ply)
-		local ply_was_debuffed = false
-		if ply.beac_sv_data and ply.beac_sv_data.has_buffs then
-			--Remove the beacon's buffs before they are reset.
-			--Typically this scenario will be hit if the beacon survives to the end of the round.
-			DebuffABeacon(ply)
-			ply_was_debuffed = true
+		if not ply.beac_sv_data or not ply.beac_sv_data.skip_next_reset then
+			--UNCOMMENT FOR DEBUGGING
+			--print("BEAC_DEBUG ResetBeaconPlayerDataForServer: Resetting player " .. ply:GetName())
+			
+			local ply_was_debuffed = false
+			if ply.beac_sv_data and ply.beac_sv_data.has_buffs then
+				--UNCOMMENT FOR DEBUGGING
+				--print("BEAC_DEBUG ResetBeaconPlayerDataForServer: Debuffing player " .. ply:GetName())
+				
+				--Remove the beacon's buffs before they are reset.
+				--Typically this scenario will be hit if the beacon survives to the end of the round.
+				DebuffABeacon(ply)
+				ply_was_debuffed = true
+			end
+			
+			--Initialize player data that only the server must know about
+			ply.beac_sv_data = {}
+			ply.beac_sv_data.has_buffs = false
+			ply.beac_sv_data.has_killed_inno = false
+			ply.beac_sv_data.last_healed = 0
+			ply.beac_sv_data.hp_bank = 0
+			ply.beac_sv_data.buff_providers = {}
+			ply.beac_sv_data.num_buffs = GetConVar("ttt2_beacon_min_buffs"):GetInt()
+			if ply_was_debuffed then
+				--debuffed player loses all of their buffs, back to the default.
+				ply.beac_sv_data.num_buffs = 0
+			end
+			SendNumBuffsToClient(ply)
+			
+			--Initialize player data that anyone can pick up from the server at any time.
+			ply:SetNWBool("IsDetectiveBeacon", false)
+		else
+			--UNCOMMENT FOR DEBUGGING
+			--print("BEAC_DEBUG ResetBeaconPlayerDataForServer: Not resetting player " .. ply:GetName())
+			
+			--Beacon was already reset and initialized. Make sure they will be reset at end of round.
+			ply.beac_sv_data.skip_next_reset = false
 		end
-		
-		--Initialize player data that only the server must know about
-		ply.beac_sv_data = {}
-		ply.beac_sv_data.has_buffs = false
-		ply.beac_sv_data.has_killed_inno = false
-		ply.beac_sv_data.last_healed = 0
-		ply.beac_sv_data.hp_bank = 0
-		ply.beac_sv_data.buff_providers = {}
-		ply.beac_sv_data.num_buffs = GetConVar("ttt2_beacon_min_buffs"):GetInt()
-		if ply_was_debuffed then
-			--debuffed player loses all of their buffs, back to the default.
-			ply.beac_sv_data.num_buffs = 0
-		end
-		SendNumBuffsToClient(ply)
-		
-		--Initialize player data that anyone can pick up from the server at any time.
-		ply:SetNWBool("IsDetectiveBeacon", false)
 	end
 	
 	local function ResetAllBeaconDataForServer()
 		for i, ply in ipairs(player.GetAll()) do
-			if not ply.beac_sv_data then
-				ResetBeaconPlayerDataForServer(ply)
-			end
+			ResetBeaconPlayerDataForServer(ply)
 		end
 	end
 	hook.Add("TTTEndRound", "ResetBeaconForServerOnEndRound", ResetAllBeaconDataForServer)
@@ -482,16 +498,25 @@ if SERVER then
 	hook.Add("TTTBeginRound", "ResetBeaconForServerOnBeginRound", ResetAllBeaconDataForServer)
 	
 	function ROLE:GiveRoleLoadout(ply, isRoleChange)
-		if not ply.beac_sv_data then
+		--UNCOMMENT FOR DEBUGGING
+		--print("BEAC_DEBUG GiveRoleLoadout: Giving role to " .. ply:GetName())
+			
+		if RoundHasNotBegun() then
+			--UNCOMMENT FOR DEBUGGING
+			--print("BEAC_DEBUG GiveRoleLoadout: Resetting " .. ply:GetName())
+			
 			--GiveRoleLoadout is called before the round has begun proper.
+			--Consequently, their server stats may not be defined.
 			--This is the best way of ensuring that a player who starts the round as a beacon is properly set up.
 			ResetBeaconPlayerDataForServer(ply)
+			--This variable is to differentiate between the typical beacon and (for example) an amnesiac.
+			ply.beac_sv_data.skip_next_reset = true
 		end
 		
 		--If condition prevents edge case where murderous amnesiac is quickly given beacon buffs before becoming innocent
 		if not ply.beac_sv_data.has_killed_inno then
 			--UNCOMMENT FOR DEBUGGING
-			--print("BEAC_DEBUG GiveRoleLoadout")
+			--print("BEAC_DEBUG GiveRoleLoadout: Updating stats for " .. ply:GetName())
 			
 			--Send # of buffs here because client may try to override the value when the round begins.
 			SendNumBuffsToClient(ply)
@@ -536,7 +561,9 @@ if CLIENT then
 	
 	net.Receive("TTT2BeaconRateOfFireUpdate", function()
 		local wep = net.ReadEntity()
-		wep.Primary.Delay = net.ReadFloat()
+		if wep and wep.Primary then
+			wep.Primary.Delay = net.ReadFloat()
+		end
 	end)
 	
 	--Modified from Pharoah's Ankh.
