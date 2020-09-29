@@ -1,0 +1,87 @@
+[i]A simple and innocent person, they rose up to power as their friends fell one by one.[/i]
+ 
+You have to use [URL=https://steamcommunity.com/sharedfiles/filedetails/?id=1357204556]TTT2[/URL] in order to use this role. Additionally using [URL=https://steamcommunity.com/sharedfiles/filedetails/?id=1362430347]ULX for TTT2[/URL] is recommended. Report bugs concerning this role [URL=https://github.com/AaronMcKenney/ttt2-role_beac]here[/URL] and submit new role ideas [URL=https://github.com/TTT-2/addon-ideas]here[/URL]. A list of all currently available roles can be found [URL=https://steamcommunity.com/sharedfiles/filedetails/?id=1737053146]here[/URL].
+ 
+Discord: [url=https://discord.gg/Npcbb4W]https://discord.gg/Npcbb4W[/url]
+Source: [url=https://github.com/AaronMcKenney/ttt2-role_beac]https://github.com/AaronMcKenney/ttt2-role_beac[/url]
+ 
+ 
+[img]https://i.imgur.com/KeP4fWN.png[/img]
+ 
+The beacon is an innocent who becomes more powerful each time someone on their team is confirmed dead. How they are buffed is determined by a series of convars, but by default consists of minor improvements to a slew of stats, including: jump power, speed, damage resistance, damage, fire rate, and health regeneration.
+ 
+If they accrue enough power, they literally light up and their role is revealed to everyone. This makes them as trustworthy as a detective, but will also alert antagonists to their growing power.
+ 
+There is but one catch: The beacon mustn't kill someone on their team. If they do, they will become an innocent, and take (potentially lethal) damage. Furthermore, an innocent killer can never become a beacon (ex. an amnesiac who kills the beacon in an attempt to inherit their powers). Such a person becomes an innocent instead.
+ 
+A final note: The default settings are on the weaker end of the balance spectrum, and exist mostly to show what it can do. Feel free to use the many convars to rebalance the beacon to best fit your server.
+ 
+[H1]Plays best with:[/H1]
+[list]
+    [*][URL=https://steamcommunity.com/sharedfiles/filedetails/?id=2001213453]Amnesiac[/URL]
+    [*][URL=https://steamcommunity.com/sharedfiles/filedetails/?id=1457185541]Unknown[/URL]
+    [*][URL=https://steamcommunity.com/sharedfiles/filedetails/?id=2001952383]Wrath[/URL]
+[/list]
+ 
+ 
+[img]https://i.imgur.com/jIBWtbM.png[/img]
+ 
+Convars are variables that are introduced to allow server owners to customize the gameplay without changing the code. There are always a handful of convars automatically created by TTT2, that define the spawn parameters of this role and are found in ULX. Additionally there might be some role specific convars, which have to be set in the server config file.
+ 
+[h1]Normal Role Convars (also found in ULX):[/h1]
+[code]# enable or disable this role
+  ttt_beacon_enabled [0/1] (default: 1)
+# the percentage of players that are spawned as this role
+  ttt_beacon_pct [0.0..1.0] (default: 0.15)
+# the limit of players that spawn as this role each round, this overwrites the percentage
+  ttt_beacon_max [0..n] (default: 1)
+# the probability each round of this role being spawned at all
+  ttt_beacon_random [0..100] (default: 30)
+# the amount of players needed for this role to spawn
+  ttt_beacon_min_players: [0..n] (default: 6)[/code]
+ 
+[h1]Rolespecific Convars:[/h1]
+[code]# the number of buffs that the beacon starts with
+  ttt2_beacon_min_buffs [0..n] (default: 1)
+# The maximum number of buffs that the beacon can achieve
+  ttt2_beacon_max_buffs [0..n] (default: 5)
+# Upon receiving this many buffs, the beacon lights up, revealing their role (like a detective)
+  ttt2_beacon_deputize_num_buffs [0..n] (default: 3)
+# Beacon receives a buff when these types of players are confirmed dead
+  ttt2_beacon_search_mode [0..3] (default: 0)
+  # 0: Team mates are confirmed dead (innocents, survivalists, detectives, etc.)
+  # 1: Non team mates are confirmed dead (traitors, infected, serial killers, jesters, etc.)
+  # 2: Anyone is confirmed dead
+  # 3: Do not buff based on player death
+# Beacon receives a buff the instant that a mate/non-mate/player dies (based on search_mode above)
+  ttt2_beacon_buff_on_death [0/1] (default: 0)
+# Beacon receives a buff every x seconds. This is disabled if x is 0.
+  ttt2_beacon_buff_every_x_seconds [0..n] (default: 0)
+# The damage the beacon receives if they kill one of their mates
+  ttt2_beacon_judgement [0..n] (default: 20)
+  
+###BUFFS###
+# The speed boost the beacon gets per buff (as a percentage of default speed)
+  ttt2_beacon_speed_boost [0.0..n.m] (default: 0.2)
+# The stamina boost the beacon gets per buff (as a percentage of default stamina. Affects how long the beacon can sprint for)
+  ttt2_beacon_stamina_boost [0.0..n.m] (default: 0.2)
+# The stamina regen boost the beacon gets per buff (as a percentage of default stamina regen. Affects how quickly the sprint meter refills)
+  ttt2_beacon_stamina_regen_boost [0.0..n.m] (default: 0.2)
+# The jump power boost the beacon gets per buff (as a percentage of default jump power. If this is greater than 0, the beacon will receive the NoFallDamage item)
+  ttt2_beacon_jump_boost [0.0..n.m] (default: 0.2)
+# The flat damage resistance boost the beacon gets per buff (as a percentage of damage which will be ignored. Does not apply to special cases such as drowning and admin shennanigans)
+  ttt2_beacon_resist_boost [0.0..n.m] (default: 0.15)
+# The armor the beacon gets per buff (by default a player with armor has 30+% damage reduction. Armor is reduced by each hit absorbed)
+  ttt2_beacon_armor_boost [0..n] (default: 0)
+# The health regen per second the beacon gets per buff (ex. 0.2 ==> 1 HP every 5 seconds)
+  ttt2_beacon_hp_regen_boost [0.0..n.m] (default: 0.2)
+# The damage boost the beacon gets per buff (as a percentage of default damage)
+  ttt2_beacon_damage_boost [0.0..n.m] (default: 0.10)
+# The fire rate boost that the beacon gets per buff (as a percentage of default fire rate. Only applies to melee, pistol, and heavy type weapons)
+  ttt2_beacon_fire_rate_boost [0.0..n.m] (default: 0.2)[/code]
+ 
+--
+[h1]Credits:[/h1]
+[URL=https://steamcommunity.com/profiles/76561198025772353/]BlackMagicFine[/URL]: creator of this role addon
+[URL=https://steamcommunity.com/id/SmugglesTheButt/]Smuggles[/URL]: designer of the role icon
+[URL=https://steamcommunity.com/id/mineotopia]Mineotopia[/URL]: designer of the role thumbnail
