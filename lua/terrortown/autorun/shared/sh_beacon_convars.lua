@@ -7,6 +7,8 @@ CreateConVar("ttt2_beacon_buff_on_death", "0", {FCVAR_ARCHIVE, FCVAR_NOTFIY})
 CreateConVar("ttt2_beacon_buff_every_x_seconds", "0", {FCVAR_ARCHIVE, FCVAR_NOTFIY})
 CreateConVar("ttt2_beacon_judgement", "20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_speed_boost", "0.20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
+CreateConVar("ttt2_beacon_stamina_boost", "0.20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
+CreateConVar("ttt2_beacon_stamina_regen_boost", "0.20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_jump_boost", "0.20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_resist_boost", "0.15", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_armor_boost", "0", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
@@ -90,6 +92,24 @@ hook.Add("TTTUlxDynamicRCVars", "TTTUlxDynamicBeaconCVars", function(tbl)
 		decimal = 2,
 		desc = "ttt2_beacon_speed_boost (Def: 0.20)"
 	})
+	--"The stamina boost the beacon gets per buff (Def: 0.20)"
+	table.insert(tbl[ROLE_BEACON], {
+		cvar = "ttt2_beacon_stamina_boost",
+		slider = true,
+		min = 0.0,
+		max = 3.5,
+		decimal = 2,
+		desc = "ttt2_beacon_stamina_boost (Def: 0.20)"
+	})
+	--"The stamin regen boost the beacon gets per buff (Def: 0.20)"
+	table.insert(tbl[ROLE_BEACON], {
+		cvar = "ttt2_beacon_stamina_regen_boost",
+		slider = true,
+		min = 0.0,
+		max = 3.5,
+		decimal = 2,
+		desc = "ttt2_beacon_stamina_regen_boost (Def: 0.20)"
+	})
 	--"The jump height boost the beacon gets per buff (Def: 0.20)"
 	table.insert(tbl[ROLE_BEACON], {
 		cvar = "ttt2_beacon_jump_boost",
@@ -155,6 +175,8 @@ hook.Add("TTT2SyncGlobals", "AddBeaconGlobals", function()
 	SetGlobalInt("ttt2_beacon_buff_every_x_seconds", GetConVar("ttt2_beacon_buff_every_x_seconds"):GetInt())
 	SetGlobalInt("ttt2_beacon_judgement", GetConVar("ttt2_beacon_judgement"):GetInt())
 	SetGlobalFloat("ttt2_beacon_speed_boost", GetConVar("ttt2_beacon_speed_boost"):GetFloat())
+	SetGlobalFloat("ttt2_beacon_stamina_boost", GetConVar("ttt2_beacon_speed_boost"):GetFloat())
+	SetGlobalFloat("ttt2_beacon_stamina_regen_boost", GetConVar("ttt2_beacon_speed_boost"):GetFloat())
 	SetGlobalFloat("ttt2_beacon_jump_boost", GetConVar("ttt2_beacon_jump_boost"):GetFloat())
 	SetGlobalFloat("ttt2_beacon_resist_boost", GetConVar("ttt2_beacon_resist_boost"):GetFloat())
 	SetGlobalInt("ttt2_beacon_armor_boost", GetConVar("ttt2_beacon_armor_boost"):GetInt())
@@ -186,6 +208,12 @@ cvars.AddChangeCallback("ttt2_beacon_judgement", function(name, old, new)
 end)
 cvars.AddChangeCallback("ttt2_beacon_speed_boost", function(name, old, new)
 	SetGlobalFloat("ttt2_beacon_speed_boost", tonumber(new))
+end)
+cvars.AddChangeCallback("ttt2_beacon_stamina_boost", function(name, old, new)
+	SetGlobalFloat("ttt2_beacon_stamina_boost", tonumber(new))
+end)
+cvars.AddChangeCallback("ttt2_beacon_stamina_regen_boost", function(name, old, new)
+	SetGlobalFloat("ttt2_beacon_stamina_regen_boost", tonumber(new))
 end)
 cvars.AddChangeCallback("ttt2_beacon_jump_boost", function(name, old, new)
 	SetGlobalFloat("ttt2_beacon_jump_boost", tonumber(new))
