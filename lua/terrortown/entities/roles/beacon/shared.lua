@@ -4,8 +4,6 @@ if SERVER then
 	resource.AddFile("materials/vgui/ttt/dynamic/roles/icon_beac.vmt")
 	util.AddNetworkString("TTT2UpdateNumBeaconBuffs")
 	util.AddNetworkString("TTT2BeaconRateOfFireUpdate")
-	util.AddNetworkString("TTT2BeaconStaminaUpdate")
-	util.AddNetworkString("TTT2BeaconStaminaRegenUpdate")
 end
 
 function ROLE:PreInitialize()
@@ -64,8 +62,10 @@ if SERVER then
 		
 		--Role-specific edge cases: Certain roles may actively lie about what their role actually is.
 		--However, this is only truly reflected after the info on the corpse has been compiled and sent.
-		if ply:GetSubRole() == ROLE_SPY and GetConVar("ttt2_spy_confirm_as_traitor"):GetBool() then
+		if ROLE_SPY and ply:GetSubRole() == ROLE_SPY and GetConVar("ttt2_spy_confirm_as_traitor"):GetBool() then
 			team = TEAM_TRAITOR
+		elseif ROLE_DEFECTIVE and ply:GetSubRole() == ROLE_DEFECTIVE and not CanADeadDefBeRevealed() then
+			team = TEAM_INNOCENT
 		end
 		
 		return team

@@ -6,6 +6,7 @@ Buff Tests:
 --beacon does not receive multiple buffs if they search a dead inno multiple times.
 --beacon is buffed if they search a spy and ttt2_spy_confirm_as_traitor is false.
 --beacon is not buffed if they search a spy and ttt2_spy_confirm_as_traitor is true.
+--beacon is buffed if they search a defective who has not been revealed, and is not buffed otherwise.
 --switching the beacon's role via admin between a different role and beacon maintains the correct buffs (beacon should have same buffs, non-beacon should have no buffs).
 --amnesiac who becomes a beacon in the middle of the round receives public beacon buffs.
 
@@ -35,6 +36,8 @@ Consequence Tests:
 --amnesiac who kills the beacon and investigates them becomes an innocent.
 --beacon who kills a spy when ttt2_spy_confirm_as_traitor is false behaves as if they killed an innocent.
 --beacon who kills a spy when ttt2_spy_confirm_as_traitor is true behaves as if they killed a traitor.
+--beacon who kills a defective when they have not been revealed behaves as if they killed an innocent.
+--beacon who kills a defective when they have been revealed behaves as if they killed a traitor.
 
 ConVar Tests:
 --beacon receives min_buffs at round start if min_buffs > 0
