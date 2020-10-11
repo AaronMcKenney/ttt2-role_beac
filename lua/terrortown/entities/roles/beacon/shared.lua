@@ -1,6 +1,5 @@
-AddCSLuaFile()
-
 if SERVER then
+	AddCSLuaFile()
 	resource.AddFile("materials/vgui/ttt/dynamic/roles/icon_beac.vmt")
 	util.AddNetworkString("TTT2UpdateNumBeaconBuffs")
 	util.AddNetworkString("TTT2BeaconRateOfFireUpdate")
