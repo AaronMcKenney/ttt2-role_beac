@@ -56,18 +56,18 @@ if SERVER then
 		return (GetRoundState() == ROUND_WAIT or GetRoundState() == ROUND_PREP)
 	end
 	
-	local function GetObservedTeam(ply)
-		local team = ply:GetTeam()
+	local function GetObservedTeam(subrole, team)
+		local obs_team = team
 		
 		--Role-specific edge cases: Certain roles may actively lie about what their role actually is.
 		--However, this is only truly reflected after the info on the corpse has been compiled and sent.
-		if ROLE_SPY and ply:GetSubRole() == ROLE_SPY and GetConVar("ttt2_spy_confirm_as_traitor"):GetBool() then
-			team = TEAM_TRAITOR
-		elseif ROLE_DEFECTIVE and ply:GetSubRole() == ROLE_DEFECTIVE and not CanADeadDefBeRevealed() then
-			team = TEAM_INNOCENT
+		if ROLE_SPY and subrole == ROLE_SPY and GetConVar("ttt2_spy_confirm_as_traitor"):GetBool() then
+			obs_team = TEAM_TRAITOR
+		elseif ROLE_DEFECTIVE and subrole == ROLE_DEFECTIVE and not CanADeadDefBeRevealed() then
+			obs_team = TEAM_INNOCENT
 		end
 		
-		return team
+		return obs_team
 	end
 	
 	--UNCOMMENT FOR DEBUGGING
@@ -389,16 +389,16 @@ if SERVER then
 		end
 	end)
 	
-	local function CanReceiveBuffFromDeadPlayer(dead_ply)
-		if GetRoundState() ~= ROUND_ACTIVE or not IsValid(dead_ply) or not dead_ply:IsPlayer() then
+	local function CanReceiveBuffFromRole(subrole, team)
+		if GetRoundState() ~= ROUND_ACTIVE then
 			return false
 		end
 		
-		local team = GetObservedTeam(dead_ply)
+		local obs_team = GetObservedTeam(subrole, team)
 		if GetConVar("ttt2_beacon_search_mode"):GetInt() == SEARCH_MODE.MATES then
-			return (team == TEAM_INNOCENT)
+			return (obs_team == TEAM_INNOCENT)
 		elseif GetConVar("ttt2_beacon_search_mode"):GetInt() == SEARCH_MODE.OTHER then
-			return (team ~= TEAM_INNOCENT)
+			return (obs_team ~= TEAM_INNOCENT)
 		elseif GetConVar("ttt2_beacon_search_mode"):GetInt() == SEARCH_MODE.ANY then
 			return true
 		end
@@ -417,7 +417,7 @@ if SERVER then
 		end
 		
 		local was_a_suicide = (victim:SteamID64() == attacker:SteamID64())
-		local killed_an_inno = (GetObservedTeam(victim) == TEAM_INNOCENT)
+		local killed_an_inno = (GetObservedTeam(victim:GetSubRole(), victim:GetTeam()) == TEAM_INNOCENT)
 		
 		if not was_a_suicide and killed_an_inno then
 			--UNCOMMENT FOR DEBUGGING
@@ -436,32 +436,32 @@ if SERVER then
 			end
 		end
 		
-		if GetConVar("ttt2_beacon_buff_on_death"):GetBool() and CanReceiveBuffFromDeadPlayer(victim) then
+		if GetConVar("ttt2_beacon_buff_on_death"):GetBool() and CanReceiveBuffFromRole(victim:GetSubRole(), victim:GetTeam()) then
 			GiveBeaconBuffToAllPlayers(victim:SteamID64())
 		end
 	end)
 	
 	hook.Add("TTTCanSearchCorpse", "BeaconUpdateOnCorpseSearch", function(ply, rag, isCovert, isLongRange)
-		if RoundHasNotBegun() or not ply.beac_sv_data then
+		if GetRoundState() ~= ROUND_ACTIVE or not ply.beac_sv_data then
 			return
 		end
-		
-		local dead_ply = player.GetBySteamID64(rag.sid64)
 		
 		--Don't do anything if the player searching the corpse isn't actively participating
-		if not IsValid(dead_ply) or not IsValid(ply) or not ply:Alive() then
+		if not IsValid(ply) or not ply:Alive() then
 			return
 		end
 		
-		if CanReceiveBuffFromDeadPlayer(dead_ply) then
+		--Do not attempt to access info from the dead player via "player.GetBySteamID64(rag.sid64)"
+		--While that would work in the general case, it returns false if the corpse came from a disconnected player.
+		if CanReceiveBuffFromRole(rag.was_role, rag.was_team) then
 			--UNCOMMENT FOR DEBUGGING
-			--print("BEAC_DEBUG BeaconUpdateOnCorpseSearch: isCovert=", isCovert, ", ID=", dead_ply:SteamID64())
+			--print("BEAC_DEBUG BeaconUpdateOnCorpseSearch: isCovert=", isCovert, ", ID=", rag.sid64)
 			
 			if isCovert then
 				--Only update the player that's covertly searching the body.
-				GiveBeaconBuffToPlayer(ply, dead_ply:SteamID64(), true)
+				GiveBeaconBuffToPlayer(ply, rag.sid64, true)
 			else
-				GiveBeaconBuffToAllPlayers(dead_ply:SteamID64())
+				GiveBeaconBuffToAllPlayers(rag.sid64)
 			end
 		end
 	end)
