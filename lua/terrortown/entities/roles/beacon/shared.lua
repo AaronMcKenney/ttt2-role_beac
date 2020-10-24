@@ -313,27 +313,22 @@ if SERVER then
 	end)
 	
 	hook.Add("EntityTakeDamage", "BeaconModifyDamage", function(target, dmg_info)
-		if RoundHasNotBegun() then
+		if GetRoundState() ~= ROUND_ACTIVE then
 			return
 		end
 		
 		local attacker = dmg_info:GetAttacker()
 		
-		if not IsValid(target) or not target:IsPlayer() or not IsValid(attacker) or not attacker:IsPlayer() or not attacker.beac_sv_data then
-			return
-		end
-		
 		--UNCOMMENT FOR DEBUGGING
-		--if target:GetSubRole() == ROLE_BEACON or attacker:GetSubRole() == ROLE_BEACON then
-		--	print("BEAC_DEBUG BeaconModifyDamage Target Name=" .. target:GetName() .. ", Attacker Name=" .. attacker:GetName())
+		--if (IsValid(target) and target:IsPlayer() and target:GetSubRole() == ROLE_BEACON) or (IsValid(attacker) and attacker:IsPlayer() and attacker:GetSubRole() == ROLE_BEACON) then
 		--	print("BEAC_DEBUG BeaconModifyDamage Before: " .. dmg_info:GetDamage())
 		--end
 		
-		if target:GetSubRole() == ROLE_BEACON then
-			dmg_info:SetDamage(dmg_info:GetDamage() * (1 - attacker.beac_sv_data.num_buffs * GetConVar("ttt2_beacon_resist_boost"):GetFloat()))
+		if IsValid(target) and target:IsPlayer() and target:GetSubRole() == ROLE_BEACON and target.beac_sv_data then
+			dmg_info:SetDamage(dmg_info:GetDamage() * (1 - target.beac_sv_data.num_buffs * GetConVar("ttt2_beacon_resist_boost"):GetFloat()))
 		end
 		
-		if attacker:GetSubRole() == ROLE_BEACON then
+		if IsValid(attacker) and attacker:IsPlayer() and attacker:GetSubRole() == ROLE_BEACON and attacker.beac_sv_data then
 			dmg_info:SetDamage(dmg_info:GetDamage() * (1 + attacker.beac_sv_data.num_buffs * GetConVar("ttt2_beacon_damage_boost"):GetFloat()))
 		end
 		

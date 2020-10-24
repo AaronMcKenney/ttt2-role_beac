@@ -69,7 +69,7 @@ Convars are variables that are introduced to allow server owners to customize th
   ttt2_beacon_stamina_regen_boost [0.0..n.m] (default: 0.2)
 # The jump power boost the beacon gets per buff (as a percentage of default jump power. If this is greater than 0, the beacon will receive the NoFallDamage item)
   ttt2_beacon_jump_boost [0.0..n.m] (default: 0.2)
-# The flat damage resistance boost the beacon gets per buff (as a percentage of damage which will be ignored. Does not apply to special cases such as drowning and admin shennanigans)
+# The flat damage resistance boost the beacon gets per buff (as a percentage of damage which will be ignored)
   ttt2_beacon_resist_boost [0.0..n.m] (default: 0.15)
 # The armor the beacon gets per buff (by default a player with armor has 30+% damage reduction. Armor is reduced by each hit absorbed)
   ttt2_beacon_armor_boost [0..n] (default: 0)
