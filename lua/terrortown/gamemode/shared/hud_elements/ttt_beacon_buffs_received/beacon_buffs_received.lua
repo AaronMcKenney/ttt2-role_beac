@@ -93,6 +93,10 @@ if CLIENT then
 		local max_buff_str = ""
 		self:SetIcon(icon_beac_unlit)
 		
+		if not CanApplyBeaconBuffs(client) then
+			return
+		end
+		
 		if client:GetNWBool("IsDetectiveBeacon") then
 			--Light up the HUD itself if the beacon becomes detective-like.
 			bg_color = BEACON.color

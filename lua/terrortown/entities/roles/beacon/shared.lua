@@ -35,6 +35,23 @@ function ROLE:Initialize()
 	roles.SetBaseRole(self, ROLE_INNOCENT)
 end
 
+function CanApplyBeaconBuffs(ply)
+	if not IsValid(ply) or not ply:IsPlayer() or ply:GetSubRole() ~= ROLE_BEACON or not ply:Alive() or not ply:IsActive() then
+		return false
+	end
+	
+	if (SERVER and (not ply.beac_sv_data or ply.beac_sv_data.has_killed_inno)) or (CLIENT and not ply.beac_cl_num_buffs) then
+		return false
+	end
+	
+	--Spectator Death Match request: Do not apply Beacon buffs to "ghosts", players that have died and entered into death match mode (who maintain their role and may legit respawn via a defib)
+	if SpecDM and (ply.IsGhost and ply:IsGhost()) then
+		return false
+	end
+	
+	return true
+end
+
 if SERVER then
 	--CONSTANTS
 	--Hardcoded default that everyone uses.
@@ -136,7 +153,7 @@ if SERVER then
 	
 	--Technically this is called in both the Server and the Client. We can get away with only adding the hook in the server, as the server hook sends TTT2BeaconRateOfFireUpdate net packets to the client with the updated information.
 	hook.Add("PlayerSwitchWeapon", "UpdateWeaponOnSwitchForBeacon", function(ply, old, new)
-		if RoundHasNotBegun() or not IsValid(old) or not IsValid(new) or not IsValid(ply) or ply:GetSubRole() ~= ROLE_BEACON or not ply.beac_sv_data then
+		if RoundHasNotBegun() or not IsValid(old) or not IsValid(new) or not CanApplyBeaconBuffs(ply) then
 			return
 		end
 		
@@ -148,7 +165,7 @@ if SERVER then
 	end)
 	
 	hook.Add("PlayerDroppedWeapon", "UpdateWeaponOnDropForBeacon", function(ply, wep)
-		if RoundHasNotBegun() or not IsValid(wep) or not IsValid(ply) or ply:GetSubRole() ~= ROLE_BEACON or not ply.beac_sv_data then
+		if RoundHasNotBegun() or not IsValid(wep) or not CanApplyBeaconBuffs(ply) then
 			return
 		end
 		
@@ -228,8 +245,7 @@ if SERVER then
 			
 			SendNumBuffsToClient(ply)
 			
-			--Don't directly modify the stats of dead beacons or non-beacons.
-			if ply:Alive() and ply:GetSubRole() == ROLE_BEACON then
+			if CanApplyBeaconBuffs(ply) then
 				UpdateBeaconStats(ply, UPDATE_MODE.ONE)
 			end
 			
@@ -283,40 +299,24 @@ if SERVER then
 	end
 	
 	hook.Add("TTTPlayerSpeedModifier", "BeaconServerModifySpeed", function(ply, _, _, no_lag)
-		if RoundHasNotBegun() or not ply.beac_sv_data then
-			return
-		end
-		
-		if IsValid(ply) and ply:IsPlayer() and ply:GetSubRole() == ROLE_BEACON then
+		if CanApplyBeaconBuffs(ply) then
 			no_lag[1] = no_lag[1] * (1 + ply.beac_sv_data.num_buffs * GetConVar("ttt2_beacon_speed_boost"):GetFloat())
 		end
 	end)
 	
 	hook.Add("TTT2StaminaDrain", "BeaconServerModifyStaminaDrain", function(ply, stamina_drain_mod)
-		if GetRoundState() ~= ROUND_ACTIVE or not ply.beac_sv_data then
-			return
-		end
-		
-		if IsValid(ply) and ply:IsPlayer() and ply:GetSubRole() == ROLE_BEACON then
+		if CanApplyBeaconBuffs(ply) then
 			stamina_drain_mod[1] = stamina_drain_mod[1] / (1 + ply.beac_sv_data.num_buffs * GetConVar("ttt2_beacon_stamina_boost"):GetFloat())
 		end
 	end)
 	
 	hook.Add("TTT2StaminaRegen", "BeaconServerModifyStaminaRegen", function(ply, stamina_regen_mod)
-		if GetRoundState() ~= ROUND_ACTIVE or not ply.beac_sv_data then
-			return
-		end
-		
-		if IsValid(ply) and ply:IsPlayer() and ply:GetSubRole() == ROLE_BEACON then
+		if CanApplyBeaconBuffs(ply) then
 			stamina_regen_mod[1] = stamina_regen_mod[1] * (1 + ply.beac_sv_data.num_buffs * GetConVar("ttt2_beacon_stamina_regen_boost"):GetFloat())
 		end
 	end)
 	
 	hook.Add("EntityTakeDamage", "BeaconModifyDamage", function(target, dmg_info)
-		if GetRoundState() ~= ROUND_ACTIVE then
-			return
-		end
-		
 		local attacker = dmg_info:GetAttacker()
 		
 		--UNCOMMENT FOR DEBUGGING
@@ -324,11 +324,11 @@ if SERVER then
 		--	print("BEAC_DEBUG BeaconModifyDamage Before: " .. dmg_info:GetDamage())
 		--end
 		
-		if IsValid(target) and target:IsPlayer() and target:GetSubRole() == ROLE_BEACON and target.beac_sv_data then
+		if CanApplyBeaconBuffs(target) then
 			dmg_info:SetDamage(dmg_info:GetDamage() * (1 - target.beac_sv_data.num_buffs * GetConVar("ttt2_beacon_resist_boost"):GetFloat()))
 		end
 		
-		if IsValid(attacker) and attacker:IsPlayer() and attacker:GetSubRole() == ROLE_BEACON and attacker.beac_sv_data then
+		if CanApplyBeaconBuffs(attacker) then
 			dmg_info:SetDamage(dmg_info:GetDamage() * (1 + attacker.beac_sv_data.num_buffs * GetConVar("ttt2_beacon_damage_boost"):GetFloat()))
 		end
 		
@@ -377,7 +377,7 @@ if SERVER then
 		
 		local cur_time = CurTime()
 		for _, ply in ipairs(player.GetAll()) do
-			if IsValid(ply) and ply:IsPlayer() and ply:Alive() and ply.beac_sv_data and ply:GetSubRole() == ROLE_BEACON then
+			if CanApplyBeaconBuffs(ply) then
 				BeaconHealthRegen(ply, cur_time)
 				BeaconBuffOnTimeInterval(ply, cur_time)
 			end
@@ -612,11 +612,7 @@ if CLIENT then
 	hook.Add("TTTPlayerSpeedModifier", "BeaconClientModifySpeed", function(ply, _, _, no_lag)
 		--Need to update Speed for both Server and Client as this hook executes in both instances.
 		local client = LocalPlayer()
-		if GetRoundState() ~= ROUND_ACTIVE or not client.beac_cl_num_buffs then
-			return
-		end
-		
-		if IsValid(client) and client:IsPlayer() and client:GetSubRole() == ROLE_BEACON then
+		if CanApplyBeaconBuffs(client) then
 			no_lag[1] = no_lag[1] * (1 + client.beac_cl_num_buffs * GetConVar("ttt2_beacon_speed_boost"):GetFloat())
 		end
 	end)
@@ -624,11 +620,7 @@ if CLIENT then
 	hook.Add("TTT2StaminaDrain", "BeaconClientModifyStaminaDrain", function(ply, stamina_drain_mod)
 		--Need to update StaminaDrain for both Server and Client. If it's only done in the server the client will overwrite the value.
 		local client = LocalPlayer()
-		if GetRoundState() ~= ROUND_ACTIVE or not client.beac_cl_num_buffs then
-			return
-		end
-		
-		if IsValid(client) and client:IsPlayer() and client:GetSubRole() == ROLE_BEACON then
+		if CanApplyBeaconBuffs(client) then
 			stamina_drain_mod[1] = stamina_drain_mod[1] / (1 + client.beac_cl_num_buffs * GetConVar("ttt2_beacon_stamina_boost"):GetFloat())
 		end
 	end)
@@ -636,11 +628,7 @@ if CLIENT then
 	hook.Add("TTT2StaminaRegen", "BeaconClientModifyStaminaRegen", function(ply, stamina_regen_mod)
 		--Need to update StaminaRegen for both Server and Client. If it's only done in the server the client will overwrite the value.
 		local client = LocalPlayer()
-		if GetRoundState() ~= ROUND_ACTIVE or not client.beac_cl_num_buffs then
-			return
-		end
-		
-		if IsValid(client) and client:IsPlayer() and client:GetSubRole() == ROLE_BEACON then
+		if CanApplyBeaconBuffs(client) then
 			stamina_regen_mod[1] = stamina_regen_mod[1] * (1 + client.beac_cl_num_buffs * GetConVar("ttt2_beacon_stamina_regen_boost"):GetFloat())
 		end
 	end)
