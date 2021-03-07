@@ -348,9 +348,12 @@ if SERVER then
 			--UNCOMMENT FOR DEBUGGING
 			--print("BEAC_DEBUG BeaconHealthRegen: hp_bank=" .. ply.beac_sv_data.hp_bank)
 			
+			--Since HP Regen ConVar is most likely a fraction, add it to a running total, and only heal when the total exceeds 1.
 			if ply.beac_sv_data.hp_bank >= 1 then
-				--Since HP Regen ConVar is most likely a fraction, add it to a running total, and only heal when the total exceeds 1.
 				local heal = math.floor(ply.beac_sv_data.hp_bank)
+				if ply:Health() + heal > ply:GetMaxHealth() then
+					heal = ply:GetMaxHealth() - ply:Health()
+				end
 				ply:SetHealth(ply:Health() + heal)
 				ply.beac_sv_data.hp_bank = ply.beac_sv_data.hp_bank - heal
 			end
