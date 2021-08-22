@@ -366,17 +366,23 @@ if SERVER then
 		end
 	end
 	
-	local function BeaconBuffOnTimeInterval(ply, cur_time)
+	local function BeaconBuffOnTimeInterval(ply)
 		local time_interval = GetConVar("ttt2_beacon_buff_every_x_seconds"):GetInt()
-		if time_interval > 0 then
-			if not ply.beac_sv_data.next_time_buffed or ply.beac_sv_data.next_time_buffed < 0 then
-				ply.beac_sv_data.next_time_buffed = cur_time + time_interval
-			elseif cur_time >= ply.beac_sv_data.next_time_buffed then
-				--This is a special case, where the server is providing the buff, not any dead player.
-				GiveBeaconBuffToPlayer(ply, nil, false)
-				ply.beac_sv_data.next_time_buffed = cur_time + time_interval
-			end
+		if time_interval <= 0 then
+			return
 		end
+		
+		timer.Create("BeaconBuffOnTimeInterval_" .. ply:SteamID64(), time_interval, 1, function()
+			if GetRoundState() ~= ROUND_ACTIVE or not CanApplyBeaconBuffs(ply) then
+				return
+			end
+			
+			--This is a special case, where the server is providing the buff, not any dead player.
+			GiveBeaconBuffToPlayer(ply, nil, false)
+			
+			--Add more buffs
+			BeaconBuffOnTimeInterval(ply)
+		end)
 	end
 	
 	hook.Add("Think", "BeaconThink", function()
@@ -388,7 +394,6 @@ if SERVER then
 		for _, ply in ipairs(player.GetAll()) do
 			if CanApplyBeaconBuffs(ply) then
 				BeaconHealthRegen(ply, cur_time)
-				BeaconBuffOnTimeInterval(ply, cur_time)
 			end
 		end
 	end)
@@ -521,7 +526,6 @@ if SERVER then
 			ply.beac_sv_data = {}
 			ply.beac_sv_data.has_buffs = false
 			ply.beac_sv_data.has_killed_inno = false
-			ply.beac_sv_data.next_time_buffed = -1
 			ply.beac_sv_data.last_healed = 0
 			ply.beac_sv_data.hp_bank = 0
 			ply.beac_sv_data.buff_providers = {}
@@ -579,6 +583,8 @@ if SERVER then
 			
 			UpdateBeaconStats(ply, UPDATE_MODE.ALL)
 		end
+		
+		BeaconBuffOnTimeInterval(ply)
 	end
 
 	function ROLE:RemoveRoleLoadout(ply, isRoleChange)
@@ -592,6 +598,10 @@ if SERVER then
 			--print("BEAC_DEBUG RemoveRoleLoadout")
 			
 			DebuffABeacon(ply)
+		end
+		
+		if timer.Exists("BeaconBuffOnTimeInterval_" .. ply:SteamID64()) then
+			timer.Remove("BeaconBuffOnTimeInterval_" .. ply:SteamID64())
 		end
 	end
 end
