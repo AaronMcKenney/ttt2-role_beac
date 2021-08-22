@@ -15,3 +15,14 @@ Killing an innocent will cause you to lose your role.]]
 -- OTHER ROLE LANGUAGE STRINGS
 L["buffs_received_" .. BEACON.name] = "Buffs Received: "
 L["max_power_" .. BEACON.name] = " (MAX POWER!)"
+
+-- EVENT STRINGS
+-- Need to be very specifically worded, due to how the system translates them.
+L["title_event_beac_deputize"] = "A Beacon was deputized"
+L["desc_event_beac_deputize"] = "{name} accrued {n} buffs and lit up!"
+L["tooltip_beac_deputize_score"] = "Lit up: {score}"
+L["beac_deputize_score"] = "Lit up:"
+L["title_event_beac_judgement"] = "A Beacon killed a player on the Innocent Team"
+L["desc_event_beac_judgement"] = "{name1} killed {name2} as a Beacon. They were dealt {x} damage"
+L["tooltip_beac_judgement_score"] = "Beacon Judgement: {score}"
+L["beac_judgement_score"] = "Beacon Judgement:"

@@ -213,6 +213,12 @@ if SERVER then
 			--Make the beacon known to everyone in game (similar to detective).
 			ply:SetNWBool("IsDetectiveBeacon", true)
 			SendPlayerToEveryone(ply)
+			
+			--Handle events/scoring. Only handle this once per player per round, otherwise the event will trigger multiple times if role changing shenanigans occur.
+			if not ply.beac_sv_data.beac_was_deputized then
+				events.Trigger(EVENT_BEAC_DEPUTIZE, ply)
+				ply.beac_sv_data.beac_was_deputized = true
+			end
 		end
 		
 		--Allow for the beacon to lose their stats again.
@@ -431,6 +437,9 @@ if SERVER then
 				--Call this whenever a role change occurs during an active round
 				SendFullStateUpdate()
 				attacker:TakeDamage(GetConVar("ttt2_beacon_judgement"):GetInt(), game.GetWorld())
+				
+				--Handle events
+				events.Trigger(EVENT_BEAC_JUDGEMENT, attacker, victim)
 			end
 		end
 		
@@ -521,6 +530,7 @@ if SERVER then
 				--debuffed player loses all of their buffs, back to the default.
 				ply.beac_sv_data.num_buffs = 0
 			end
+			ply.beac_was_deputized = false
 			SendNumBuffsToClient(ply)
 			
 			--Initialize player data that anyone can pick up from the server at any time.
