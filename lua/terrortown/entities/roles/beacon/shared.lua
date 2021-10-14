@@ -10,8 +10,9 @@ function ROLE:PreInitialize()
 	self.abbr = "beac" -- abbreviation
 	
 	self.surviveBonus = 0.5 -- bonus multiplier for every survive when another player was killed
-	self.scoreKillsMultiplier = 1 -- multiplier for kill of player of another team
-	self.scoreTeamKillsMultiplier = -16 -- multiplier for teamkill
+	self.score.killsMultiplier = 1 -- multiplier for kill of player of another team
+	self.score.teamKillsMultiplier = -8 -- multiplier for teamkill
+	self.score.bodyFoundMuliplier = 3 -- multiplier for finding bodies
 	
 	self.unknownTeam = true -- disables team voice chat.
 	self.disableSync = false -- Do tell the player about his role
