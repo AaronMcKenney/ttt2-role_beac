@@ -439,7 +439,7 @@ if SERVER then
 			if attacker:GetSubRole() == ROLE_BEACON then
 				--Demote the guilty one.
 				--Indirectly calls DebuffABeacon()
-				attacker:SetRole(ROLE_INNOCENT)
+				attacker:SetRole(ROLE_INNOCENT, attacker:GetTeam())
 				--Call this whenever a role change occurs during an active round
 				SendFullStateUpdate()
 				attacker:TakeDamage(GetConVar("ttt2_beacon_judgement"):GetInt(), game.GetWorld())
@@ -491,7 +491,7 @@ if SERVER then
 				--print("BEAC_DEBUG BeaconBackgroundCheck: Refusing to change role to Beacon")
 				
 				--RDM-ers and bad men not allowed.
-				self:SetRole(ROLE_INNOCENT)
+				self:SetRole(ROLE_INNOCENT, self:GetTeam())
 				--Call this whenever a role change occurs during an active round
 				SendFullStateUpdate()
 			end
