@@ -6,6 +6,7 @@ CreateConVar("ttt2_beacon_search_mode", "0", {FCVAR_ARCHIVE, FCVAR_NOTFIY})
 CreateConVar("ttt2_beacon_buff_on_death", "0", {FCVAR_ARCHIVE, FCVAR_NOTFIY})
 CreateConVar("ttt2_beacon_buff_every_x_seconds", "0", {FCVAR_ARCHIVE, FCVAR_NOTFIY})
 CreateConVar("ttt2_beacon_judgement", "20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
+CreateConVar("ttt2_beacon_demotion_enable", "1", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_speed_boost", "0.20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_stamina_boost", "0.20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
 CreateConVar("ttt2_beacon_stamina_regen_boost", "0.20", {FCVAR_ARCHIVE, FCVAR_NOTIFY})
@@ -82,6 +83,12 @@ hook.Add("TTTUlxDynamicRCVars", "TTTUlxDynamicBeaconCVars", function(tbl)
 		max = 100,
 		decimal = 0,
 		desc = "ttt2_beacon_judgement (Def: 20)"
+	})
+	--"Beacon is demoted to Innocent if they kill someone on the Innocent team (Def: 1)"
+	table.insert(tbl[ROLE_BEACON], {
+		cvar = "ttt2_beacon_demotion_enable",
+		checkbox = true,
+		desc = "ttt2_beacon_demotion_enable (Def: 1)"
 	})
 	--"The speed boost the beacon gets per buff (Def: 0.20)"
 	table.insert(tbl[ROLE_BEACON], {
@@ -174,6 +181,7 @@ hook.Add("TTT2SyncGlobals", "AddBeaconGlobals", function()
 	SetGlobalBool("ttt2_beacon_buff_on_death", GetConVar("ttt2_beacon_buff_on_death"):GetBool())
 	SetGlobalInt("ttt2_beacon_buff_every_x_seconds", GetConVar("ttt2_beacon_buff_every_x_seconds"):GetInt())
 	SetGlobalInt("ttt2_beacon_judgement", GetConVar("ttt2_beacon_judgement"):GetInt())
+	SetGlobalBool("ttt2_beacon_demotion_enable", GetConVar("ttt2_beacon_demotion_enable"):GetBool())
 	SetGlobalFloat("ttt2_beacon_speed_boost", GetConVar("ttt2_beacon_speed_boost"):GetFloat())
 	SetGlobalFloat("ttt2_beacon_stamina_boost", GetConVar("ttt2_beacon_speed_boost"):GetFloat())
 	SetGlobalFloat("ttt2_beacon_stamina_regen_boost", GetConVar("ttt2_beacon_speed_boost"):GetFloat())
@@ -205,6 +213,9 @@ cvars.AddChangeCallback("ttt2_beacon_buff_every_x_seconds", function(name, old, 
 end)
 cvars.AddChangeCallback("ttt2_beacon_judgement", function(name, old, new)
 	SetGlobalInt("ttt2_beacon_judgement", tonumber(new))
+end)
+cvars.AddChangeCallback("ttt2_beacon_demotion_enable", function(name, old, new)
+	SetGlobalBool("ttt2_beacon_demotion_enable", tobool(tonumber(new)))
 end)
 cvars.AddChangeCallback("ttt2_beacon_speed_boost", function(name, old, new)
 	SetGlobalFloat("ttt2_beacon_speed_boost", tonumber(new))

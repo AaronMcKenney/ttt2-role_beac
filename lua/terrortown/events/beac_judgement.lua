@@ -34,14 +34,21 @@ if SERVER then
 			serialname = self.event.title,
 			beac_name = beac:GetName(),
 			beac_id = beac:SteamID64(),
+			beac_team = beac:GetTeam(),
 			victim_name = victim:GetName()
 		})
 	end
 	
 	function EVENT:CalculateScore()
-		self:SetPlayerScore(self.event.beac_id, {
-			score = -1
-		})
+		if self.event.beac_team == TEAM_INNOCENT then
+			self:SetPlayerScore(self.event.beac_id, {
+				score = -1
+			})
+		else
+			self:SetPlayerScore(self.event.beac_id, {
+				score = 0
+			})
+		end
 	end
 	
 	function EVENT:Serialize()

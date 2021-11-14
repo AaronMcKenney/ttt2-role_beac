@@ -437,11 +437,13 @@ if SERVER then
 			attacker.beac_sv_data.has_killed_inno = true
 		
 			if attacker:GetSubRole() == ROLE_BEACON then
-				--Demote the guilty one.
-				--Indirectly calls DebuffABeacon()
-				attacker:SetRole(ROLE_INNOCENT, attacker:GetTeam())
-				--Call this whenever a role change occurs during an active round
-				SendFullStateUpdate()
+				if GetConVar("ttt2_beacon_demotion_enable"):GetBool() then
+					--Demote the guilty one.
+					--Indirectly calls DebuffABeacon()
+					attacker:SetRole(ROLE_INNOCENT, attacker:GetTeam())
+					--Call this whenever a role change occurs during an active round
+					SendFullStateUpdate()
+				end
 				attacker:TakeDamage(GetConVar("ttt2_beacon_judgement"):GetInt(), game.GetWorld())
 				
 				--Handle events
