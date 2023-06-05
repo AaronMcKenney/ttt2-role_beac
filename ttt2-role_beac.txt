@@ -61,7 +61,9 @@ Convars are variables that are introduced to allow server owners to customize th
   ttt2_beacon_judgement [0..n] (default: 20)
 # Beacon is demoted to Innocent if they kill someone on the Innocent team
   ttt2_beacon_demotion_enable [0/1] (default: 1)
-  
+# In order to receive a buff, the Beacon needs to personally search the dead body (ttt2_beacon_buff_on_death takes priority) (Def: 0)
+  ttt2_beacon_buff_requires_in_person [0/1] (default: 0)
+ 
 ###BUFFS###
 # The speed boost the beacon gets per buff (as a percentage of default speed)
   ttt2_beacon_speed_boost [0.0..n.m] (default: 0.2)

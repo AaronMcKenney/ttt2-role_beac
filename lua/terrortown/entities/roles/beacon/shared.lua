@@ -20,6 +20,8 @@ function ROLE:PreInitialize()
 	self.defaultTeam = TEAM_INNOCENT -- the team name: roles with same team name are working together
 	self.defaultEquipment = INNO_EQUIPMENT -- here you can set up your own default equipment
 
+	self.isPolicingRole = GetConVar("ttt2_beacon_buff_requires_in_person"):GetBool() and GetConVar("ttt2_inspect_detective_only"):GetBool() -- Allows for Beacon to search dead bodies if ttt2_inspect_detective_only is set to true
+
 	-- ULX ConVars
 	self.conVarData = {
 		pct = 0.15, -- necessary: percentage of getting this role selected (per player)
@@ -472,10 +474,14 @@ if SERVER then
 			--UNCOMMENT FOR DEBUGGING
 			--print("BEAC_DEBUG BeaconUpdateOnCorpseSearch: isCovert=", isCovert, ", ID=", rag.sid64)
 			
-			if isCovert then
-				--Only update the player that's covertly searching the body.
+			requires_in_person = GetConVar("ttt2_beacon_buff_requires_in_person"):GetBool()
+			
+			if requires_in_person and ply.beac_sv_data.buff_providers[rag.sid64] ~= nil then
+				LANG.Msg(ply, "already_received_" .. BEACON.name, nil, MSG_MSTACK_ROLE)
+			elseif isCovert or requires_in_person then
+				--Only update the player that's searching the body.
 				GiveBeaconBuffToPlayer(ply, rag.sid64, true)
-			else
+			elseif not requires_in_person then
 				GiveBeaconBuffToAllPlayers(rag.sid64)
 			end
 		end

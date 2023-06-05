@@ -15,6 +15,7 @@ Killing an innocent will cause you to lose your role.]]
 -- OTHER ROLE LANGUAGE STRINGS
 L["buffs_received_" .. BEACON.name] = "Buffs Received: "
 L["max_power_" .. BEACON.name] = " (MAX POWER!)"
+L["already_received_" .. BEACON.name] = "You have already received a buff from this body"
 
 -- EVENT STRINGS
 -- Need to be very specifically worded, due to how the system translates them.
