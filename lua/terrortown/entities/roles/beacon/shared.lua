@@ -474,7 +474,7 @@ if SERVER then
 			--UNCOMMENT FOR DEBUGGING
 			--print("BEAC_DEBUG BeaconUpdateOnCorpseSearch: isCovert=", isCovert, ", ID=", rag.sid64)
 			
-			requires_in_person = GetConVar("ttt2_beacon_buff_requires_in_person"):GetBool()
+			local requires_in_person = GetConVar("ttt2_beacon_buff_requires_in_person"):GetBool()
 			
 			if requires_in_person and ply.beac_sv_data.buff_providers[rag.sid64] ~= nil then
 				LANG.Msg(ply, "already_received_" .. BEACON.name, nil, MSG_MSTACK_ROLE)
