@@ -691,4 +691,156 @@ if CLIENT then
 			end
 		end
 	end)
+	
+	-------------
+	-- CONVARS --
+	-------------
+	function ROLE:AddToSettingsMenu(parent)
+		local form = vgui.CreateTTT2Form(parent, "header_roles_additional")
+
+		form:MakeSlider({
+			serverConvar = "ttt2_beacon_min_buffs",
+			label = "label_beacon_min_buffs",
+			min = 0,
+			max = 10,
+			decimal = 0
+		})
+		
+		form:MakeSlider({
+			serverConvar = "ttt2_beacon_max_buffs",
+			label = "label_beacon_max_buffs",
+			min = 0,
+			max = 10,
+			decimal = 0
+		})
+		
+		form:MakeSlider({
+			serverConvar = "ttt2_beacon_deputize_num_buffs",
+			label = "label_beacon_deputize_num_buffs",
+			min = 0,
+			max = 11,
+			decimal = 0
+		})
+
+		form:MakeComboBox({
+			serverConvar = "ttt2_beacon_search_mode",
+			label = "label_beacon_search_mode",
+			choices = {{
+				value = 0,
+				title = LANG.GetTranslation("label_beacon_search_mode_0")
+			},{
+				value = 1,
+				title = LANG.GetTranslation("label_beacon_search_mode_1")
+			},{
+				value = 2,
+				title = LANG.GetTranslation("label_beacon_search_mode_2")
+			},{
+				value = 3,
+				title = LANG.GetTranslation("label_beacon_search_mode_3")
+			}}
+		})
+
+		form:MakeCheckBox({
+			serverConvar = "ttt2_beacon_buff_on_death",
+			label = "label_beacon_buff_on_death"
+		})
+		
+		form:MakeSlider({
+			serverConvar = "ttt2_beacon_buff_every_x_seconds",
+			label = "label_beacon_buff_every_x_seconds",
+			min = 0,
+			max = 600,
+			decimal = 0
+		})
+		
+		form:MakeSlider({
+			serverConvar = "ttt2_beacon_judgement",
+			label = "label_beacon_judgement",
+			min = 0,
+			max = 100,
+			decimal = 0
+		})
+
+		form:MakeCheckBox({
+			serverConvar = "ttt2_beacon_demotion_enable",
+			label = "label_beacon_demotion_enable"
+		})
+
+		form:MakeCheckBox({
+			serverConvar = "ttt2_beacon_buff_requires_in_person",
+			label = "label_beacon_buff_requires_in_person"
+		})
+		
+		form:MakeSlider({
+			serverConvar = "ttt2_beacon_speed_boost",
+			label = "label_beacon_speed_boost",
+			min = 0.0,
+			max = 3.5,
+			decimal = 2
+		})
+		
+		form:MakeSlider({
+			serverConvar = "ttt2_beacon_stamina_boost",
+			label = "label_beacon_stamina_boost",
+			min = 0.0,
+			max = 3.5,
+			decimal = 2
+		})
+		
+		form:MakeSlider({
+			serverConvar = "ttt2_beacon_stamina_regen_boost",
+			label = "label_beacon_stamina_regen_boost",
+			min = 0.0,
+			max = 3.5,
+			decimal = 2
+		})
+		
+		form:MakeSlider({
+			serverConvar = "ttt2_beacon_jump_boost",
+			label = "label_beacon_jump_boost",
+			min = 0.0,
+			max = 3.5,
+			decimal = 2
+		})
+		
+		form:MakeSlider({
+			serverConvar = "ttt2_beacon_resist_boost",
+			label = "label_beacon_resist_boost",
+			min = 0.0,
+			max = 0.9,
+			decimal = 2
+		})
+		
+		form:MakeSlider({
+			serverConvar = "ttt2_beacon_armor_boost",
+			label = "label_beacon_armor_boost",
+			min = 0,
+			max = 100,
+			decimal = 0
+		})
+		
+		form:MakeSlider({
+			serverConvar = "ttt2_beacon_hp_regen_boost",
+			label = "label_beacon_hp_regen_boost",
+			min = 0.0,
+			max = 5.0,
+			decimal = 2
+		})
+		
+		form:MakeSlider({
+			serverConvar = "ttt2_beacon_damage_boost",
+			label = "label_beacon_damage_boost",
+			min = 0.0,
+			max = 3.5,
+			decimal = 2
+		})
+		
+		form:MakeSlider({
+			serverConvar = "ttt2_beacon_fire_rate_boost",
+			label = "label_beacon_fire_rate_boost",
+			min = 0.0,
+			max = 3.5,
+			decimal = 2
+		})
+	end
 end
