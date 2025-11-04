@@ -108,7 +108,7 @@ if SERVER then
 			return
 		end
 		
-		if (wep.Kind == WEAPON_MELEE or wep.Kind == WEAPON_HEAVY or wep.Kind == WEAPON_PISTOL) then
+		if (wep.Kind == WEAPON_MELEE or wep.Kind == WEAPON_HEAVY or wep.Kind == WEAPON_PISTOL) and wep.Primary and wep.Primary.Delay then
 			if not wep.beac_modded then
 				wep.beac_modded = true
 			end
@@ -136,7 +136,7 @@ if SERVER then
 		
 		--Only remove speed if the weapon was tinkered with by the beacon.
 		--Prevents issue where the weapon may otherwise get stats removed multiple times on player death (Due to Drop and Switch being called).
-		if wep.beac_modded and (wep.Kind == WEAPON_MELEE or wep.Kind == WEAPON_HEAVY or wep.Kind == WEAPON_PISTOL) then
+		if wep.beac_modded and (wep.Kind == WEAPON_MELEE or wep.Kind == WEAPON_HEAVY or wep.Kind == WEAPON_PISTOL) and wep.Primary and wep.Primary.Delay then
 			--UNCOMMENT FOR DEBUGGING
 			--print("BEAC_DEBUG DisableWeaponSpeedForBeacon Before: ", wep.Primary.Delay)
 			
@@ -636,7 +636,7 @@ if CLIENT then
 	
 	net.Receive("TTT2BeaconRateOfFireUpdate", function()
 		local wep = net.ReadEntity()
-		if wep and wep.Primary then
+		if wep and wep.Primary and wep.Primary.Delay then
 			wep.Primary.Delay = net.ReadFloat()
 		end
 	end)
